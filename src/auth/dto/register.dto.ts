@@ -1,5 +1,5 @@
 // src/auth/dto/register.dto.ts
-import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength, ValidateIf } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength, ValidateIf, IsOptional, IsDateString } from 'class-validator';
 import { UserRole } from '../../common/enums';
 
 export class RegisterDto {
@@ -13,18 +13,45 @@ export class RegisterDto {
   @IsEnum(UserRole)
   role: UserRole;
 
-  @ValidateIf(o => o.role === UserRole.USER)
-  @IsNotEmpty()
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  // Champs pour USER ou PROMOTER particulier
+  @ValidateIf(o => o.role === UserRole.USER || (o.role === UserRole.PROMOTER && o.firstName))
   @IsString()
   firstName?: string;
 
-  @ValidateIf(o => o.role === UserRole.USER)
-  @IsNotEmpty()
+  @ValidateIf(o => o.role === UserRole.USER || (o.role === UserRole.PROMOTER && o.lastName))
   @IsString()
   lastName?: string;
 
-  @ValidateIf(o => o.role === UserRole.PROMOTER)
-  @IsNotEmpty()
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: string;
+
+  @IsOptional()
+  @IsString()
+  driverLicenseNumber?: string;
+
+  // Champs pour PROMOTER entreprise
+  @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @IsOptional()
+  @IsString()
+  companyType?: string;
+
+  @IsOptional()
+  @IsEmail()
+  contactEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  companyAddress?: string;
 }

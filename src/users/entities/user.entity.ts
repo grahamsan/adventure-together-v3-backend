@@ -41,6 +41,28 @@ export class User {
   @Column({ type: 'text', nullable: true })
   bio?: string;
 
+  @Column({ nullable: true })
+  phoneNumber?: string;
+
+  @Column({ type: 'date', nullable: true })
+  dateOfBirth?: Date;
+
+  @Column({ nullable: true })
+  driverLicenseNumber?: string;
+
+  // Champs spécifiques pour les promoteurs (entreprises)
+  @Column({ nullable: true })
+  companyName?: string;
+
+  @Column({ nullable: true })
+  companyType?: string;
+
+  @Column({ nullable: true })
+  contactEmail?: string;
+
+  @Column({ nullable: true })
+  companyAddress?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

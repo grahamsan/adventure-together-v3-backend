@@ -1,0 +1,84 @@
+### Test d'inscription - Particulier (User)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "jean.dupont@example.com",
+  "password": "password123",
+  "role": "user",
+  "firstName": "Jean",
+  "lastName": "Dupont",
+  "phoneNumber": "+33612345678",
+  "dateOfBirth": "1990-05-15",
+  "driverLicenseNumber": "123456789"
+}
+
+### Test d'inscription - Entreprise (Promoter)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "contact@agence-voyage.com",
+  "password": "password123",
+  "role": "promoter",
+  "name": "Agence Voyage Aventure",
+  "companyName": "Agence Voyage Aventure",
+  "companyType": "Agence événementielle",
+  "contactEmail": "contact@agence-voyage.com",
+  "phoneNumber": "+33612345678",
+  "companyAddress": "123 Avenue des Voyages, Paris"
+}
+
+### Test de connexion
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "jean.dupont@example.com",
+  "password": "password123"
+}
+
+### Test de récupération du profil (nécessite un token)
+GET http://localhost:3000/auth/profile
+Authorization: Bearer VOTRE_TOKEN_ICI
+
+### Test de mot de passe oublié
+POST http://localhost:3000/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "jean.dupont@example.com"
+}
+
+### Test de vérification d'email
+POST http://localhost:3000/auth/send-verification
+Content-Type: application/json
+
+{
+  "email": "jean.dupont@example.com"
+}
+
+### Test de vérification avec code OTP
+POST http://localhost:3000/auth/verify-email
+Content-Type: application/json
+
+{
+  "email": "jean.dupont@example.com",
+  "code": "123456"
+}
+
+### Test de réinitialisation de mot de passe
+POST http://localhost:3000/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "jean.dupont@example.com",
+  "code": "123456",
+  "newPassword": "newpassword123"
+}
+
+### Récupérer tous les utilisateurs
+GET http://localhost:3000/users
+
+### Récupérer un utilisateur par ID
+GET http://localhost:3000/users/VOTRE_USER_ID

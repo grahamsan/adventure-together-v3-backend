@@ -14,20 +14,42 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { password, role, firstName, lastName, name } = createUserDto;
+    const { password, role, firstName, lastName, name, dateOfBirth, ...rest } = createUserDto;
 
     const passwordHash = await bcrypt.hash(password, 10);
     let displayName: string;
+    
     if (role === 'user') {
+      // USER : firstName + lastName
       displayName = `${firstName ?? ''} ${lastName ?? ''}`.trim();
+    } else if (role === 'promoter') {
+      // PROMOTER particulier: firstName + lastName
+      // PROMOTER entreprise: name (nom de l'entreprise)
+      if (firstName && lastName) {
+        displayName = `${firstName} ${lastName}`.trim();
+      } else if (name) {
+        displayName = name;
+      } else {
+        displayName = '';
+      }
     } else {
-      displayName = name ?? '';
+      displayName = '';
     }
 
     const user = this.userRepo.create({
-      ...createUserDto,
+      email: createUserDto.email,
       passwordHash,
+      role,
+      firstName,
+      lastName,
       name: displayName,
+      phoneNumber: rest.phoneNumber,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      driverLicenseNumber: rest.driverLicenseNumber,
+      companyName: rest.companyName,
+      companyType: rest.companyType,
+      contactEmail: rest.contactEmail,
+      companyAddress: rest.companyAddress,
     });
 
     return this.userRepo.save(user);

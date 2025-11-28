@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsEnum, MinLength, ValidateIf, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsEnum, MinLength, ValidateIf, IsString, IsOptional, IsDateString } from 'class-validator';
 import { UserRole } from '../../common/enums';
 
 export class CreateUserDto {
@@ -12,20 +12,45 @@ export class CreateUserDto {
   @IsEnum(UserRole)
   role: UserRole;
 
-  // Obligatoire seulement si role = user
-  @ValidateIf(o => o.role === UserRole.USER)
-  @IsNotEmpty()
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
+  // Champs pour USER ou PROMOTER particulier
+  @ValidateIf(o => o.role === UserRole.USER || (o.role === UserRole.PROMOTER && o.firstName))
   @IsString()
   firstName?: string;
 
-  @ValidateIf(o => o.role === UserRole.USER)
-  @IsNotEmpty()
+  @ValidateIf(o => o.role === UserRole.USER || (o.role === UserRole.PROMOTER && o.lastName))
   @IsString()
   lastName?: string;
 
-  // Obligatoire seulement si role = promoter
-  @ValidateIf(o => o.role === UserRole.PROMOTER)
-  @IsNotEmpty()
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: string;
+
+  @IsOptional()
+  @IsString()
+  driverLicenseNumber?: string;
+
+  // Champs pour PROMOTER entreprise
+  @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @IsOptional()
+  @IsString()
+  companyType?: string;
+
+  @IsOptional()
+  @IsEmail()
+  contactEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  companyAddress?: string;
 }
