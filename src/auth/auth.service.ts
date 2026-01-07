@@ -15,8 +15,11 @@ import { Otp } from './entities/otp.entity';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequestResetDto } from './dto/request-reset.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MailService } from '../mail/mail.service';
+import { EmailType } from '../mail/types/email.types';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +27,7 @@ export class AuthService {
     private readonly usersService: UserService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly mailService: MailService,
     @InjectRepository(Otp)
     private readonly otpRepo: Repository<Otp>,
   ) {}
@@ -95,10 +99,6 @@ export class AuthService {
     }
   }
 
-  private async sendEmail(to: string, subject: string, text: string) {
-    console.log(`📩 Email envoyé à ${to}: ${subject} - ${text}`);
-  }
-
   // --- Vérification d'email ---
   async sendVerificationCode(email: string) {
     const user = await this.usersService.findByEmail(email);
@@ -109,7 +109,13 @@ export class AuthService {
     const otp = this.otpRepo.create({ user, code });
     await this.otpRepo.save(otp);
 
-    await this.sendEmail(email, 'Vérification email', `Votre code est : ${code}`);
+    await this.mailService.sendDynamicEmail(
+      email,
+      user.name || 'Utilisateur',
+      EmailType.EMAIL_VERIFICATION,
+      { code },
+    );
+
     return { message: 'Code envoyé à votre adresse e-mail' };
   }
 
@@ -138,7 +144,22 @@ export class AuthService {
   async requestPasswordReset(dto: RequestResetDto) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user) throw new NotFoundException('User not found');
-    return this.sendVerificationCode(dto.email);
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const otp = this.otpRepo.create({ user, code });
+    await this.otpRepo.save(otp);
+
+    await this.mailService.sendDynamicEmail(
+      dto.email,
+      user.name || 'Utilisateur',
+      EmailType.PASSWORD_RESET,
+      { code },
+    );
+
+    return {
+      message: 'Code de réinitialisation envoyé à votre adresse e-mail',
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
@@ -156,9 +177,76 @@ export class AuthService {
     otp.isUsed = true;
     await this.otpRepo.save(otp);
 
-    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.usersService.update(user.id, { password: dto.newPassword });
 
+    // Envoyer email de confirmation
+    await this.mailService.sendDynamicEmail(
+      dto.email,
+      user.name || 'Utilisateur',
+      EmailType.PASSWORD_CHANGED_CONFIRMATION,
+    );
+
     return { message: 'Mot de passe réinitialisé avec succès' };
+  }
+
+  // --- Changement de mot de passe (utilisateur connecté) ---
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    // Vérifier que l'ancien mot de passe est correct
+    const matches = await bcrypt.compare(dto.oldPassword, user.passwordHash);
+    if (!matches) {
+      throw new BadRequestException('Ancien mot de passe incorrect');
+    }
+
+    // Générer et envoyer un code de vérification
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const otp = this.otpRepo.create({ user, code });
+    await this.otpRepo.save(otp);
+
+    await this.mailService.sendDynamicEmail(
+      user.email,
+      user.name || 'Utilisateur',
+      EmailType.PASSWORD_CHANGE,
+      { code },
+    );
+
+    return {
+      message: 'Code de vérification envoyé à votre adresse e-mail',
+      requiresVerification: true,
+    };
+  }
+
+  async confirmPasswordChange(
+    userId: string,
+    code: string,
+    newPassword: string,
+  ) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const otp = await this.otpRepo.findOne({
+      where: { user: { id: user.id }, code, isUsed: false },
+    });
+
+    if (!otp || otp.expiresAt < new Date()) {
+      throw new BadRequestException('Code invalide ou expiré');
+    }
+
+    otp.isUsed = true;
+    await this.otpRepo.save(otp);
+
+    await this.usersService.update(user.id, { password: newPassword });
+
+    // Envoyer email de confirmation
+    await this.mailService.sendDynamicEmail(
+      user.email,
+      user.name || 'Utilisateur',
+      EmailType.PASSWORD_CHANGED_CONFIRMATION,
+    );
+
+    return { message: 'Mot de passe changé avec succès' };
   }
 }
