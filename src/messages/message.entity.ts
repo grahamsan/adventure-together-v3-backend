@@ -1,5 +1,12 @@
 // message.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Conversation } from '../conversations/conversation.entity';
 import { User } from '../users/entities/user.entity';
 
@@ -8,7 +15,9 @@ export class Message {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Conversation, conv => conv.messages, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Conversation, (conv) => conv.messages, {
+    onDelete: 'CASCADE',
+  })
   conversation: Conversation;
 
   @ManyToOne(() => User, { nullable: false, onDelete: 'SET NULL' })
@@ -17,6 +26,9 @@ export class Message {
   // uniquement du texte selon ton besoin
   @Column({ type: 'text' })
   content: string;
+
+  @Column({ type: 'text', array: true, default: [] })
+  attachments: string[];
 
   @CreateDateColumn()
   timestamp: Date;

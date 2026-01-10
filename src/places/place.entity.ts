@@ -1,7 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToMany,
+} from 'typeorm';
 import { PlaceType } from '../common/enums';
 import { Like } from '../likes/like.entity';
 import { Activity } from '../activity/activity.entity';
+import { User } from '../users/entities/user.entity';
 
 @Entity('places')
 export class Place {
@@ -9,15 +18,17 @@ export class Place {
   id: string;
 
   @Column()
-  name: string;
+  title: string;
 
   @Column({ type: 'enum', enum: PlaceType })
   type: PlaceType;
 
-  @Column({ type: 'text', nullable: true })
-  description?: string;
+  @Column({ type: 'text' })
+  description: string;
 
-  // localisation simple
+  @Column({ nullable: true })
+  imageUrl?: string;
+
   @Column({ type: 'double precision', nullable: true })
   latitude?: number;
 
@@ -30,7 +41,6 @@ export class Place {
   @Column({ type: 'text', array: true, nullable: true })
   photos?: string[];
 
-  // cache du nombre de likes (utile pour reads rapides)
   @Column({ type: 'int', default: 0 })
   likesCount: number;
 
@@ -40,9 +50,12 @@ export class Place {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Like, like => like.place)
+  @OneToMany(() => Like, (like) => like.place)
   likes?: Like[];
 
-  @OneToMany(() => Activity, activity => activity.associatedPlaces)
+  @OneToMany(() => Activity, (activity) => activity.associatedPlaces)
   activities?: Activity[];
+
+  @ManyToMany(() => User, (user) => user.favoritePlaces)
+  favoritedBy?: User[];
 }

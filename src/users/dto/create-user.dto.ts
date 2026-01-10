@@ -1,5 +1,14 @@
-import { IsEmail, IsNotEmpty, IsEnum, MinLength, ValidateIf, IsString, IsOptional, IsDateString } from 'class-validator';
-import { UserRole } from '../../common/enums';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsEnum,
+  MinLength,
+  ValidateIf,
+  IsString,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
+import { UserRole, OrganizerType } from '../../common/enums';
 
 export class CreateUserDto {
   @IsEmail()
@@ -12,32 +21,36 @@ export class CreateUserDto {
   @IsEnum(UserRole)
   role: UserRole;
 
-  @IsOptional()
-  @IsString()
-  phoneNumber?: string;
+  // For Organizer role: Individual or Company
+  @ValidateIf(
+    (o) => o.role === UserRole.ORGANIZER || o.role === UserRole.PROMOTER,
+  )
+  @IsEnum(OrganizerType)
+  organizerType?: OrganizerType;
 
-  // Champs pour USER ou PROMOTER particulier
-  @ValidateIf(o => o.role === UserRole.USER || (o.role === UserRole.PROMOTER && o.firstName))
+  // Personal details (Participant, Driver, Organizer Individual)
+  @IsOptional()
   @IsString()
   firstName?: string;
 
-  @ValidateIf(o => o.role === UserRole.USER || (o.role === UserRole.PROMOTER && o.lastName))
+  @IsOptional()
   @IsString()
   lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
 
   @IsOptional()
   @IsDateString()
   dateOfBirth?: string;
 
+  // Driver-specific
   @IsOptional()
   @IsString()
   driverLicenseNumber?: string;
 
-  // Champs pour PROMOTER entreprise
-  @IsOptional()
-  @IsString()
-  name?: string;
-
+  // Company Organizer fields
   @IsOptional()
   @IsString()
   companyName?: string;

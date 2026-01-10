@@ -1,13 +1,21 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn,
-  OneToMany, ManyToMany, JoinTable
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
-import { UserRole } from '../../common/enums';
+import { UserRole, OrganizerType, UserStatus } from '../../common/enums';
 import { Trip } from '../../trips/trip.entity';
 import { Activity } from '../../activity/activity.entity';
 import { Like } from '../../likes/like.entity';
 import { Notification } from '../../notifications/notification.entity';
 import { Conversation } from '../../conversations/conversation.entity';
+import { Place } from '../../places/place.entity';
+import { TripApplication } from '../../trips/trip-application.entity';
 
 @Entity('users')
 export class User {
@@ -23,8 +31,16 @@ export class User {
   @Column()
   passwordHash: string;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.PARTICIPANT })
   role: UserRole;
+
+  // For Organizer role: Individual or Company
+  @Column({ type: 'enum', enum: OrganizerType, nullable: true })
+  organizerType?: OrganizerType;
+
+  // Account status (active/suspended)
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
+  status: UserStatus;
 
   @Column({ nullable: true })
   firstName?: string;
@@ -69,22 +85,29 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => Trip, trip => trip.owner)
+  @OneToMany(() => Trip, (trip) => trip.owner)
   trips?: Trip[];
 
-  @OneToMany(() => Activity, activity => activity.promoter)
+  @OneToMany(() => Activity, (activity) => activity.promoter)
   activitiesPromoted?: Activity[];
 
-  @ManyToMany(() => Activity, activity => activity.participants)
+  @ManyToMany(() => Activity, (activity) => activity.participants)
   @JoinTable({ name: 'activity_participants' })
   activitiesParticipated?: Activity[];
 
-  @OneToMany(() => Like, like => like.user)
+  @OneToMany(() => Like, (like) => like.user)
   likes?: Like[];
 
-  @OneToMany(() => Notification, n => n.recipient)
+  @OneToMany(() => Notification, (n) => n.recipient)
   notifications?: Notification[];
 
-  @ManyToMany(() => Conversation, conv => conv.associatedUsers)
+  @ManyToMany(() => Conversation, (conv) => conv.associatedUsers)
   conversations?: Conversation[];
+
+  @ManyToMany(() => Place, (place) => place.favoritedBy)
+  @JoinTable({ name: 'user_favorite_places' })
+  favoritePlaces?: Place[];
+
+  @OneToMany(() => TripApplication, (app) => app.applicant)
+  tripApplications?: TripApplication[];
 }

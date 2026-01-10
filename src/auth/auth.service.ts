@@ -20,6 +20,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailService } from '../mail/mail.service';
 import { EmailType } from '../mail/types/email.types';
+import { normalizeUserRole } from '../common/enums';
 
 @Injectable()
 export class AuthService {
@@ -64,8 +65,9 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: normalizeUserRole(user.role),
       },
     };
   }
@@ -81,8 +83,9 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,
-        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: normalizeUserRole(user.role),
       },
       accessToken: token,
     };
@@ -111,7 +114,7 @@ export class AuthService {
 
     await this.mailService.sendDynamicEmail(
       email,
-      user.name || 'Utilisateur',
+      this.usersService.getDisplayName(user),
       EmailType.EMAIL_VERIFICATION,
       { code },
     );
@@ -152,7 +155,7 @@ export class AuthService {
 
     await this.mailService.sendDynamicEmail(
       dto.email,
-      user.name || 'Utilisateur',
+      this.usersService.getDisplayName(user),
       EmailType.PASSWORD_RESET,
       { code },
     );
@@ -182,7 +185,7 @@ export class AuthService {
     // Envoyer email de confirmation
     await this.mailService.sendDynamicEmail(
       dto.email,
-      user.name || 'Utilisateur',
+      this.usersService.getDisplayName(user),
       EmailType.PASSWORD_CHANGED_CONFIRMATION,
     );
 
@@ -208,7 +211,7 @@ export class AuthService {
 
     await this.mailService.sendDynamicEmail(
       user.email,
-      user.name || 'Utilisateur',
+      this.usersService.getDisplayName(user),
       EmailType.PASSWORD_CHANGE,
       { code },
     );
@@ -243,7 +246,7 @@ export class AuthService {
     // Envoyer email de confirmation
     await this.mailService.sendDynamicEmail(
       user.email,
-      user.name || 'Utilisateur',
+      this.usersService.getDisplayName(user),
       EmailType.PASSWORD_CHANGED_CONFIRMATION,
     );
 

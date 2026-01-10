@@ -10,6 +10,12 @@ import { Place } from './src/places/place.entity';
 import { RefreshToken } from './src/auth/entities/refresh-token.entity';
 import { Request } from './src/request/request.entity';
 import { TripActivity } from './src/trip-activity/trip-activity.entity';
+import { Vehicle } from './src/vehicles/vehicle.entity';
+import { Report } from './src/reports/report.entity';
+import { TripApplication } from './src/trips/trip-application.entity';
+import { Comment } from './src/comments/comment.entity';
+import { CommentInteraction } from './src/comments/comment-interaction.entity';
+import { Otp } from './src/auth/entities/otp.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -32,9 +38,15 @@ export const AppDataSource = new DataSource({
     RefreshToken,
     Request,
     TripActivity,
+    Vehicle,
+    Report,
+    TripApplication,
+    Comment,
+    CommentInteraction,
+    Otp,
   ],
   migrations: ['src/migrations/*.ts'],
   ssl: {
-    rejectUnauthorized: false, 
+    rejectUnauthorized: false,
   },
 });
