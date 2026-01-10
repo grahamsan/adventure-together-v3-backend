@@ -13,8 +13,17 @@ import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
-  ApiProperty,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
+import {
+  BadRequestResponseDto,
+  UnauthorizedResponseDto,
+  NotFoundResponseDto,
+  SuccessResponseDto,
+} from '../common/dto/api-responses.dto';
+import { HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -35,6 +44,18 @@ export class ExperiencesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get experiences feed' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Experiences feed retrieved.',
+    type: ExperienceFeedResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Missing or invalid token.',
+    type: UnauthorizedResponseDto,
+  })
   async findAll(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 20,
@@ -46,6 +67,17 @@ export class ExperiencesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get experience details' })
+  @ApiParam({ name: 'id', description: 'Experience ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Experience details retrieved.',
+    type: ExperienceResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Experience not found.',
+    type: NotFoundResponseDto,
+  })
   async findOne(@Param('id') id: string): Promise<ExperienceResponseDto> {
     return this.experiencesService.findOne(id);
   }
@@ -55,6 +87,26 @@ export class ExperiencesController {
   @Roles(UserRole.ORGANIZER)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new experience (Organizer only)' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Experience created successfully.',
+    schema: {
+      properties: {
+        statusCode: { type: 'number', example: 201 },
+        data: { $ref: '#/components/schemas/ExperienceResponseDto' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data.',
+    type: BadRequestResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Missing or invalid token.',
+    type: UnauthorizedResponseDto,
+  })
   async create(
     @Request() req,
     @Body() createExperienceDto: CreateExperienceDto,
@@ -66,6 +118,28 @@ export class ExperiencesController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Like/Unlike an experience' })
+  @ApiParam({ name: 'id', description: 'Experience ID' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Like status toggled.',
+    schema: {
+      properties: {
+        statusCode: { type: 'number', example: 201 },
+        data: {
+          type: 'object',
+          properties: {
+            liked: { type: 'boolean' },
+            likesCount: { type: 'number' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Experience not found.',
+    type: NotFoundResponseDto,
+  })
   async toggleLike(@Param('id') id: string, @Request() req) {
     return this.experiencesService.toggleLike(id, req.user.id);
   }

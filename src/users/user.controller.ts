@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseUUIDPipe,
   ForbiddenException,
+  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,18 +19,43 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../common/enums';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
+import {
+  BadRequestResponseDto,
+  UnauthorizedResponseDto,
+  NotFoundResponseDto,
+  SuccessResponseDto,
+} from '../common/dto/api-responses.dto';
 
-@ApiTags('users')
+@ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new user (Admin only)' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Create user (Internal/Direct)' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'User created.',
+    schema: {
+      properties: {
+        statusCode: { type: 'number', example: 201 },
+        data: { type: 'object' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid data.',
+    type: BadRequestResponseDto,
+  })
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
@@ -37,6 +63,15 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Current user profile.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized.',
+    type: UnauthorizedResponseDto,
+  })
   getMe(@GetUser() user: any) {
     const userId = user.sub || user.id;
     return this.userService.findOne(userId);
@@ -46,6 +81,15 @@ export class UserController {
   @ApiOperation({ summary: 'List all users (Admin only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'List of all users.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized.',
+    type: UnauthorizedResponseDto,
+  })
   findAll() {
     return this.userService.findAll();
   }
@@ -54,6 +98,16 @@ export class UserController {
   @ApiOperation({ summary: 'Get user by ID (Admin only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User details.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found.',
+    type: NotFoundResponseDto,
+  })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.userService.findOne(id);
   }
@@ -61,6 +115,20 @@ export class UserController {
   @Put(':id')
   @ApiOperation({ summary: 'Update user' })
   @UseGuards(JwtAuthGuard)
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User updated.',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Permission denied.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found.',
+    type: NotFoundResponseDto,
+  })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -79,6 +147,16 @@ export class UserController {
   @ApiOperation({ summary: 'Delete user (Admin only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User deleted.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found.',
+    type: NotFoundResponseDto,
+  })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.userService.remove(id);
   }

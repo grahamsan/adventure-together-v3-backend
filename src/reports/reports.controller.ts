@@ -8,13 +8,23 @@ import {
   Query,
   UseGuards,
   Request,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiQuery,
+  ApiResponse,
+  ApiParam,
 } from '@nestjs/swagger';
+import {
+  BadRequestResponseDto,
+  UnauthorizedResponseDto,
+  ForbiddenResponseDto,
+  NotFoundResponseDto,
+  SuccessResponseDto,
+} from '../common/dto/api-responses.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -36,12 +46,29 @@ export class ReportsController {
 
   @Post('reports')
   @ApiOperation({ summary: 'Create a report (Generic)' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Report created.',
+    schema: {
+      properties: {
+        statusCode: { type: 'number', example: 201 },
+        data: { type: 'object' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid data.',
+    type: BadRequestResponseDto,
+  })
   create(@Request() req, @Body() dto: CreateReportDto) {
     return this.reportsService.create(req.user.id, dto);
   }
 
   @Post('experiences/:id/report')
   @ApiOperation({ summary: 'Report an experience' })
+  @ApiParam({ name: 'id', description: 'Experience ID' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Report created.' })
   reportExperience(
     @Request() req,
     @Param('id') id: string,
@@ -56,6 +83,8 @@ export class ReportsController {
 
   @Post('trips/:id/report')
   @ApiOperation({ summary: 'Report a trip' })
+  @ApiParam({ name: 'id', description: 'Trip ID' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Report created.' })
   reportTrip(
     @Request() req,
     @Param('id') id: string,
@@ -70,6 +99,8 @@ export class ReportsController {
 
   @Post('users/:id/report')
   @ApiOperation({ summary: 'Report a user' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Report created.' })
   reportUser(
     @Request() req,
     @Param('id') id: string,
@@ -90,6 +121,15 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get all reports (min 10 reports per entity)' })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'type', enum: ReportEntityType, required: false })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'List of reports returned.',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Access denied.',
+    type: ForbiddenResponseDto,
+  })
   findAll(
     @Query('search') search?: string,
     @Query('type') type?: ReportEntityType,

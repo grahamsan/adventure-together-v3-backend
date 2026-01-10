@@ -31,7 +31,32 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "User created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -39,9 +64,9 @@
             "bearer": []
           }
         ],
-        "summary": "Create a new user (Admin only)",
+        "summary": "Create user (Internal/Direct)",
         "tags": [
-          "users"
+          "Users"
         ]
       },
       "get": {
@@ -49,7 +74,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of all users."
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -59,7 +94,7 @@
         ],
         "summary": "List all users (Admin only)",
         "tags": [
-          "users"
+          "Users"
         ]
       }
     },
@@ -69,7 +104,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Current user profile."
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -79,7 +124,7 @@
         ],
         "summary": "Get current user profile",
         "tags": [
-          "users"
+          "Users"
         ]
       }
     },
@@ -91,6 +136,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "User ID",
             "schema": {
               "type": "string"
             }
@@ -98,7 +144,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "User details."
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -108,7 +164,7 @@
         ],
         "summary": "Get user by ID (Admin only)",
         "tags": [
-          "users"
+          "Users"
         ]
       },
       "put": {
@@ -118,6 +174,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "User ID",
             "schema": {
               "type": "string"
             }
@@ -135,7 +192,20 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "User updated."
+          },
+          "403": {
+            "description": "Permission denied."
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -145,7 +215,7 @@
         ],
         "summary": "Update user",
         "tags": [
-          "users"
+          "Users"
         ]
       },
       "delete": {
@@ -155,6 +225,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "User ID",
             "schema": {
               "type": "string"
             }
@@ -162,7 +233,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "User deleted."
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -172,7 +253,7 @@
         ],
         "summary": "Delete user (Admin only)",
         "tags": [
-          "users"
+          "Users"
         ]
       }
     },
@@ -192,11 +273,41 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "User successfully registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "accessToken": {
+                      "type": "string",
+                      "example": "jwt.token.here"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RegisterResponseDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Register a new user",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -216,11 +327,41 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Login successful.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "accessToken": {
+                      "type": "string",
+                      "example": "jwt.token.here"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/LoginResponseDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Login user and receive JWT",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -230,11 +371,27 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "User profile retrieved."
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current user profile",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -242,13 +399,55 @@
       "post": {
         "operationId": "AuthController_sendVerification",
         "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                  }
+                }
+              }
+            }
           }
         },
+        "responses": {
+          "201": {
+            "description": "Verification code sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send an email verification code",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -268,11 +467,37 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Email verified.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Verify email with a code",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -292,11 +517,37 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Reset code sent if user exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Request a password reset code",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -316,11 +567,37 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Password reset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Reset password using a code",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -340,11 +617,52 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Change request initiated, code sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Incorrect old password.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request password change (authenticated)",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -364,11 +682,42 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Password changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired code.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm password change with code",
         "tags": [
-          "Auth"
+          "Authentication"
         ]
       }
     },
@@ -378,20 +727,22 @@
         "parameters": [
           {
             "name": "email",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
+              "example": "test@example.com",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Email sent."
           }
         },
+        "summary": "Test verification email sending",
         "tags": [
-          "Mail"
+          "Mail (Testing only)"
         ]
       }
     },
@@ -401,20 +752,22 @@
         "parameters": [
           {
             "name": "email",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
+              "example": "test@example.com",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Email sent."
           }
         },
+        "summary": "Test password reset email sending",
         "tags": [
-          "Mail"
+          "Mail (Testing only)"
         ]
       }
     },
@@ -424,20 +777,22 @@
         "parameters": [
           {
             "name": "email",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
+              "example": "test@example.com",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Email sent."
           }
         },
+        "summary": "Test password change email sending",
         "tags": [
-          "Mail"
+          "Mail (Testing only)"
         ]
       }
     },
@@ -447,20 +802,22 @@
         "parameters": [
           {
             "name": "email",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
+              "example": "test@example.com",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Email sent."
           }
         },
+        "summary": "Test password changed confirmation email sending",
         "tags": [
-          "Mail"
+          "Mail (Testing only)"
         ]
       }
     },
@@ -470,20 +827,22 @@
         "parameters": [
           {
             "name": "email",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
+              "example": "test@example.com",
               "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Email sent."
           }
         },
+        "summary": "Test welcome email sending",
         "tags": [
-          "Mail"
+          "Mail (Testing only)"
         ]
       }
     },
@@ -493,24 +852,43 @@
         "parameters": [
           {
             "name": "page",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
+              "example": 1,
               "type": "number"
             }
           },
           {
             "name": "limit",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
+              "example": 20,
               "type": "number"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Experiences feed retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceFeedResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -538,7 +916,42 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Experience created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ExperienceResponseDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -560,6 +973,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Experience ID",
             "schema": {
               "type": "string"
             }
@@ -567,7 +981,24 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Experience details retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experience not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -589,6 +1020,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Experience ID",
             "schema": {
               "type": "string"
             }
@@ -596,7 +1028,40 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Like status toggled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "liked": {
+                          "type": "boolean"
+                        },
+                        "likesCount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Experience not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -616,7 +1081,27 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of filling trips.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TripResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -644,7 +1129,42 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Trip created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TripResponseDto"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only drivers can create trips.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -666,6 +1186,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
@@ -683,7 +1204,32 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Application submitted successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trip not found or no seats available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -705,6 +1251,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
@@ -712,7 +1259,34 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Trip details retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Visibility restricted for this trip.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Trip not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -732,6 +1306,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
@@ -739,7 +1314,24 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Trip updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the owner of the trip.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -759,6 +1351,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
@@ -766,7 +1359,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Trip deleted."
+          },
+          "403": {
+            "description": "Not the owner of the trip.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -788,6 +1391,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Application ID",
             "schema": {
               "type": "string"
             }
@@ -805,7 +1409,17 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Application updated."
+          },
+          "403": {
+            "description": "Not the author of this application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -825,6 +1439,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Application ID",
             "schema": {
               "type": "string"
             }
@@ -832,7 +1447,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Application deleted."
+          },
+          "403": {
+            "description": "Not the author of this application.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -854,6 +1479,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
@@ -861,7 +1487,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of applications for the trip."
+          },
+          "403": {
+            "description": "Not the owner of the trip.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -883,6 +1519,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
@@ -891,14 +1528,59 @@
             "name": "applyId",
             "required": true,
             "in": "path",
+            "description": "Application ID",
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "accepted",
+                      "rejected"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Decision updated successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not enough seats or invalid state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -920,14 +1602,45 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "filling",
+                      "incoming",
+                      "done"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Trip status updated."
+          },
+          "400": {
+            "description": "Invalid status transition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -947,7 +1660,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of conversations."
           }
         },
         "security": [
@@ -969,6 +1682,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Conversation ID",
             "schema": {
               "type": "string"
             }
@@ -976,7 +1690,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Conversation details."
+          },
+          "404": {
+            "description": "Conversation not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -998,6 +1722,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Conversation ID",
             "schema": {
               "type": "string"
             }
@@ -1005,7 +1730,7 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of messages."
           }
         },
         "security": [
@@ -1025,6 +1750,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Conversation ID",
             "schema": {
               "type": "string"
             }
@@ -1042,7 +1768,32 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Message sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1064,6 +1815,7 @@
             "name": "messageId",
             "required": true,
             "in": "path",
+            "description": "Message ID",
             "schema": {
               "type": "string"
             }
@@ -1081,7 +1833,17 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Message updated."
+          },
+          "404": {
+            "description": "Message not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1101,6 +1863,7 @@
             "name": "messageId",
             "required": true,
             "in": "path",
+            "description": "Message ID",
             "schema": {
               "type": "string"
             }
@@ -1108,7 +1871,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Message deleted."
+          },
+          "404": {
+            "description": "Message not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1130,6 +1903,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Conversation ID",
             "schema": {
               "type": "string"
             }
@@ -1137,7 +1911,22 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Messages marked as read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1157,7 +1946,34 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Statistics retrieved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDashboardStatsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - Admin only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1177,7 +1993,27 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of users retrieved."
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - Admin only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1199,6 +2035,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "User ID",
             "schema": {
               "type": "string"
             }
@@ -1216,7 +2053,47 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Role updated."
+          },
+          "400": {
+            "description": "Invalid role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - Admin only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1238,6 +2115,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "User ID",
             "schema": {
               "type": "string"
             }
@@ -1255,7 +2133,37 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Status updated."
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - Admin only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1277,14 +2185,45 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "User ID",
             "schema": {
               "type": "string"
             }
           }
         ],
         "responses": {
-          "200": {
-            "description": ""
+          "204": {
+            "description": "User deleted."
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied - Admin only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1314,7 +2253,32 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Report created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1336,6 +2300,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Experience ID",
             "schema": {
               "type": "string"
             }
@@ -1343,7 +2308,7 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Report created."
           }
         },
         "security": [
@@ -1365,6 +2330,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Trip ID",
             "schema": {
               "type": "string"
             }
@@ -1372,7 +2338,7 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Report created."
           }
         },
         "security": [
@@ -1394,6 +2360,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "User ID",
             "schema": {
               "type": "string"
             }
@@ -1401,7 +2368,7 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Report created."
           }
         },
         "security": [
@@ -1445,7 +2412,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of reports returned."
+          },
+          "403": {
+            "description": "Access denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1514,7 +2491,42 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Vehicle created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1524,7 +2536,7 @@
         ],
         "summary": "Add a new vehicle",
         "tags": [
-          "vehicles"
+          "Vehicles"
         ]
       },
       "get": {
@@ -1532,7 +2544,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of vehicles."
           }
         },
         "security": [
@@ -1542,7 +2554,7 @@
         ],
         "summary": "Get current user's vehicles",
         "tags": [
-          "vehicles"
+          "Vehicles"
         ]
       }
     },
@@ -1554,6 +2566,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Vehicle ID",
             "schema": {
               "type": "string"
             }
@@ -1561,7 +2574,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Vehicle details."
+          },
+          "404": {
+            "description": "Vehicle not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1571,7 +2594,7 @@
         ],
         "summary": "Get vehicle details",
         "tags": [
-          "vehicles"
+          "Vehicles"
         ]
       },
       "patch": {
@@ -1581,6 +2604,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Vehicle ID",
             "schema": {
               "type": "string"
             }
@@ -1598,7 +2622,17 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Vehicle updated."
+          },
+          "404": {
+            "description": "Vehicle not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1608,7 +2642,7 @@
         ],
         "summary": "Update a vehicle",
         "tags": [
-          "vehicles"
+          "Vehicles"
         ]
       },
       "delete": {
@@ -1618,6 +2652,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "Vehicle ID",
             "schema": {
               "type": "string"
             }
@@ -1625,7 +2660,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Vehicle deleted."
+          },
+          "404": {
+            "description": "Vehicle not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1635,7 +2680,7 @@
         ],
         "summary": "Delete a vehicle",
         "tags": [
-          "vehicles"
+          "Vehicles"
         ]
       }
     },
@@ -1655,7 +2700,32 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Lieu créé avec succès.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1699,7 +2769,7 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Liste des lieux récupérée."
           }
         },
         "security": [
@@ -1719,7 +2789,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Liste des favoris récupérée."
+          },
+          "401": {
+            "description": "Non autorisé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1741,6 +2821,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du lieu",
             "schema": {
               "type": "string"
             }
@@ -1748,7 +2829,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Détails du lieu récupérés."
+          },
+          "404": {
+            "description": "Lieu non trouvé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1768,6 +2859,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du lieu",
             "schema": {
               "type": "string"
             }
@@ -1785,7 +2877,27 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Lieu modifié."
+          },
+          "403": {
+            "description": "Accès refusé - Admin requis.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lieu non trouvé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1805,6 +2917,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du lieu",
             "schema": {
               "type": "string"
             }
@@ -1812,7 +2925,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Lieu supprimé."
+          },
+          "403": {
+            "description": "Accès refusé - Admin requis.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1834,6 +2957,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du lieu",
             "schema": {
               "type": "string"
             }
@@ -1841,7 +2965,22 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Statut favori mis à jour.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1863,14 +3002,46 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du lieu",
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "motif": {
+                    "type": "string",
+                    "example": "Lieu inexistant"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Signalement envoyé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1901,7 +3072,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Statistiques récupérées."
+          },
+          "401": {
+            "description": "Non autorisé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1923,6 +3104,7 @@
             "name": "experienceId",
             "required": true,
             "in": "path",
+            "description": "ID de l'expérience",
             "schema": {
               "type": "string"
             }
@@ -1940,7 +3122,32 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Commentaire créé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Données invalides.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1960,6 +3167,7 @@
             "name": "experienceId",
             "required": true,
             "in": "path",
+            "description": "ID de l'expérience",
             "schema": {
               "type": "string"
             }
@@ -1967,7 +3175,7 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Liste des commentaires."
           }
         },
         "security": [
@@ -1989,6 +3197,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du commentaire",
             "schema": {
               "type": "string"
             }
@@ -2006,7 +3215,17 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Commentaire modifié."
+          },
+          "404": {
+            "description": "Commentaire non trouvé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2026,6 +3245,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du commentaire",
             "schema": {
               "type": "string"
             }
@@ -2033,7 +3253,7 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Commentaire supprimé."
           }
         },
         "security": [
@@ -2055,6 +3275,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du commentaire",
             "schema": {
               "type": "string"
             }
@@ -2062,7 +3283,22 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Like ajouté/retiré.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2084,6 +3320,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du commentaire",
             "schema": {
               "type": "string"
             }
@@ -2091,7 +3328,22 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Dislike ajouté/retiré.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2113,6 +3365,7 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "description": "ID du commentaire",
             "schema": {
               "type": "string"
             }
@@ -2120,7 +3373,22 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Signalement envoyé.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2156,7 +3424,59 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "File uploaded successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "public_id": {
+                          "type": "string"
+                        },
+                        "original_name": {
+                          "type": "string"
+                        },
+                        "size": {
+                          "type": "number"
+                        },
+                        "mimetype": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid file or upload error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2195,7 +3515,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Files uploaded successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "statusCode": {
+                      "type": "number",
+                      "example": 201
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          },
+                          "public_id": {
+                            "type": "string"
+                          },
+                          "original_name": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "number"
+                          },
+                          "mimetype": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid files or upload error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2230,6 +3605,72 @@
       "CreateUserDto": {
         "type": "object",
         "properties": {}
+      },
+      "BadRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 400
+          },
+          "message": {
+            "type": "object",
+            "example": "Bad Request"
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
+      },
+      "UnauthorizedResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 401
+          },
+          "message": {
+            "type": "object",
+            "example": "Unauthorized"
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
+      },
+      "NotFoundResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 404
+          },
+          "message": {
+            "type": "object",
+            "example": "Not Found"
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
       },
       "UpdateUserDto": {
         "type": "object",
@@ -2418,6 +3859,110 @@
           "newPassword"
         ]
       },
+      "ExperienceOwnerDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "fullName",
+          "avatarUrl"
+        ]
+      },
+      "ExperienceStatsDto": {
+        "type": "object",
+        "properties": {
+          "interests": {
+            "type": "number"
+          },
+          "comments": {
+            "type": "number"
+          },
+          "likes": {
+            "type": "number"
+          },
+          "trips": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "interests",
+          "comments",
+          "likes",
+          "trips"
+        ]
+      },
+      "ExperienceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/ExperienceOwnerDto"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/ExperienceStatsDto"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "location",
+          "date",
+          "image",
+          "owner",
+          "stats"
+        ]
+      },
+      "ExperienceFeedResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExperienceResponseDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "data",
+          "total",
+          "page",
+          "limit"
+        ]
+      },
       "CreateExperienceDto": {
         "type": "object",
         "properties": {
@@ -2463,6 +4008,79 @@
           "location",
           "dateStart",
           "dateEnd"
+        ]
+      },
+      "TripResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "seatsAvailable": {
+            "type": "number"
+          },
+          "seatsConfirmed": {
+            "type": "number"
+          },
+          "price": {
+            "type": "number"
+          },
+          "escales": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "filling",
+              "incoming",
+              "done"
+            ]
+          },
+          "associatedEventName": {
+            "type": "string"
+          },
+          "driverName": {
+            "type": "string",
+            "nullable": true
+          },
+          "vehicleModel": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "date",
+          "time",
+          "description",
+          "seatsAvailable",
+          "seatsConfirmed",
+          "price",
+          "escales",
+          "status",
+          "associatedEventName",
+          "driverName",
+          "vehicleModel"
         ]
       },
       "CreateTripDto": {
@@ -2528,6 +4146,28 @@
           "associatedVehicle"
         ]
       },
+      "ForbiddenResponseDto": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "number",
+            "example": 403
+          },
+          "message": {
+            "type": "object",
+            "example": "Forbidden"
+          },
+          "error": {
+            "type": "string",
+            "example": "Bad Request"
+          }
+        },
+        "required": [
+          "statusCode",
+          "message",
+          "error"
+        ]
+      },
       "ApplyToTripDto": {
         "type": "object",
         "properties": {
@@ -2576,6 +4216,40 @@
         },
         "required": [
           "text"
+        ]
+      },
+      "AdminDashboardStatsDto": {
+        "type": "object",
+        "properties": {
+          "totalExperiences": {
+            "type": "number"
+          },
+          "totalTrips": {
+            "type": "number"
+          },
+          "totalComments": {
+            "type": "number"
+          },
+          "totalReports": {
+            "type": "number"
+          },
+          "tripStats": {
+            "type": "object"
+          },
+          "likesPerExperience": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "totalExperiences",
+          "totalTrips",
+          "totalComments",
+          "totalReports",
+          "tripStats",
+          "likesPerExperience"
         ]
       },
       "UpdateUserRoleDto": {
