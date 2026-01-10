@@ -30,11 +30,15 @@ import {
   NotFoundResponseDto,
   SuccessResponseDto,
 } from '../common/dto/api-responses.dto';
+import { UserService } from '../users/user.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -94,7 +98,8 @@ export class AuthController {
     type: UnauthorizedResponseDto,
   })
   getProfile(@Request() req) {
-    return req.user;
+    const userId = req.user.sub || req.user.id;
+    return this.userService.findOne(userId);
   }
 
   // --- Vérification d'email ---
