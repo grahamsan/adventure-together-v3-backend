@@ -12,11 +12,13 @@ import { User } from '../users/entities/user.entity';
 import { UserService } from '../users/user.service';
 import { Otp } from './entities/otp.entity';
 import { MailModule } from '../mail/mail.module';
+import { UserModule } from '../users/user.module';
 
 @Module({
   imports: [
     ConfigModule,
     MailModule,
+    UserModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -29,7 +31,7 @@ import { MailModule } from '../mail/mail.module';
     TypeOrmModule.forFeature([User, RefreshToken, Otp]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, UserService],
+  providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

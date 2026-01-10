@@ -35,13 +35,21 @@ export class AuthService {
 
   // Valide user pour login (compare password)
   async validateUser(email: string, password: string): Promise<User> {
-    const user = await this.usersService.findByEmail(email);
-    // findByEmail peut renvoyer null
+    const normalizedEmail = email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
+
+    console.log(`[AuthService] Validating user: ${normalizedEmail}`);
+
     if (!user) {
+      console.log(`[AuthService] User not found: ${normalizedEmail}`);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const matches = await bcrypt.compare(password, user.passwordHash);
+
+    console.log(`[AuthService] Password match result: ${matches}`);
+    console.log(`[AuthService] Stored hash: ${user.passwordHash}`);
+
     if (!matches) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -74,6 +82,7 @@ export class AuthService {
 
   // register : délègue à UserService.create (NE PAS hasher ici)
   async register(registerDto: RegisterDto) {
+    registerDto.email = registerDto.email.toLowerCase();
     // userService.create effectue le hashage (comme tu l'as déjà)
     const user = await this.usersService.create(registerDto as any);
     // On peut retourner un token directement si tu veux
@@ -104,7 +113,8 @@ export class AuthService {
 
   // --- Vérification d'email ---
   async sendVerificationCode(email: string) {
-    const user = await this.usersService.findByEmail(email);
+    const normalizedEmail = email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
     if (!user) throw new NotFoundException('User not found');
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -113,7 +123,7 @@ export class AuthService {
     await this.otpRepo.save(otp);
 
     await this.mailService.sendDynamicEmail(
-      email,
+      normalizedEmail,
       this.usersService.getDisplayName(user),
       EmailType.EMAIL_VERIFICATION,
       { code },
@@ -123,7 +133,8 @@ export class AuthService {
   }
 
   async verifyEmail(dto: VerifyEmailDto) {
-    const user = await this.usersService.findByEmail(dto.email);
+    const normalizedEmail = dto.email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
     if (!user) throw new NotFoundException('User not found');
 
     const otp = await this.otpRepo.findOne({
@@ -145,7 +156,8 @@ export class AuthService {
 
   // --- Mot de passe oublié ---
   async requestPasswordReset(dto: RequestResetDto) {
-    const user = await this.usersService.findByEmail(dto.email);
+    const normalizedEmail = dto.email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
     if (!user) throw new NotFoundException('User not found');
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -166,7 +178,8 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto) {
-    const user = await this.usersService.findByEmail(dto.email);
+    const normalizedEmail = dto.email.toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
     if (!user) throw new NotFoundException('User not found');
 
     const otp = await this.otpRepo.findOne({

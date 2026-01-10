@@ -30,7 +30,11 @@ export class UserService {
       ...rest
     } = createUserDto;
 
+    const email = createUserDto.email.toLowerCase();
     const passwordHash = await bcrypt.hash(password, 10);
+
+    console.log(`[UserService] Creating user: ${email}`);
+    console.log(`[UserService] Password hash generated: ${passwordHash}`);
 
     // Normalize the role for backward compatibility
     const normalizedRole = normalizeUserRole(role);
@@ -47,7 +51,7 @@ export class UserService {
     }
 
     const user = this.userRepo.create({
-      email: createUserDto.email,
+      email,
       passwordHash,
       role: normalizedRole,
       organizerType: organizerType ?? undefined,
