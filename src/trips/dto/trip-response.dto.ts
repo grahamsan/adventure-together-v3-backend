@@ -35,8 +35,11 @@ export class TripResponseDto {
   @ApiProperty({ enum: TripStatus })
   status: TripStatus;
 
-  @ApiProperty()
-  associatedEventName: string;
+  @ApiProperty({ description: 'Name of the related experience, if any' })
+  relatedExpName: string;
+
+  @ApiProperty({ description: 'Name of the related place, if any' })
+  relatedPlaceName: string;
 
   @ApiProperty({ nullable: true })
   driverName?: string;

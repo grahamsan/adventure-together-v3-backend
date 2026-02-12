@@ -56,8 +56,11 @@ export class UserController {
     description: 'Invalid data.',
     type: BadRequestResponseDto,
   })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto) {
+    const user = await this.userService.create(createUserDto);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = user;
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)
@@ -72,9 +75,12 @@ export class UserController {
     description: 'Unauthorized.',
     type: UnauthorizedResponseDto,
   })
-  getMe(@GetUser() user: any) {
+  async getMe(@GetUser() user: any) {
     const userId = user.sub || user.id;
-    return this.userService.findOne(userId);
+    const resultUser = await this.userService.findOne(userId);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = resultUser;
+    return result;
   }
 
   @Get()
@@ -90,8 +96,13 @@ export class UserController {
     description: 'Unauthorized.',
     type: UnauthorizedResponseDto,
   })
-  findAll() {
-    return this.userService.findAll();
+  async findAll() {
+    const users = await this.userService.findAll();
+    return users.map((user) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...result } = user;
+      return result;
+    });
   }
 
   @Get(':id')
@@ -108,8 +119,11 @@ export class UserController {
     description: 'User not found.',
     type: NotFoundResponseDto,
   })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.userService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const user = await this.userService.findOne(id);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = user;
+    return result;
   }
 
   @Put(':id')
@@ -129,7 +143,7 @@ export class UserController {
     description: 'User not found.',
     type: NotFoundResponseDto,
   })
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
     @GetUser() currentUser: any,
@@ -140,7 +154,10 @@ export class UserController {
         "Vous n'avez pas la permission de modifier ce profil.",
       );
     }
-    return this.userService.update(id, updateUserDto);
+    const user = await this.userService.update(id, updateUserDto);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = user;
+    return result;
   }
 
   @Delete(':id')

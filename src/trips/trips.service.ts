@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Trip } from './trip.entity';
 import { User } from '../users/entities/user.entity';
 import { Activity } from '../activity/activity.entity';
+import { Place } from '../places/place.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { TripApplication } from './trip-application.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
@@ -25,6 +26,8 @@ export class TripsService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Activity)
     private readonly activityRepo: Repository<Activity>,
+    @InjectRepository(Place)
+    private readonly placeRepo: Repository<Place>,
     @InjectRepository(Vehicle)
     private readonly vehicleRepo: Repository<Vehicle>,
     @InjectRepository(TripApplication)
@@ -35,7 +38,7 @@ export class TripsService {
   async findAll(): Promise<TripResponseDto[]> {
     const trips = await this.tripRepo.find({
       where: { status: TripStatus.FILLING },
-      relations: ['owner', 'associatedEvent', 'vehicle'],
+      relations: ['owner', 'experience', 'place', 'vehicle'],
       order: { startDate: 'ASC' },
     });
 
@@ -47,7 +50,8 @@ export class TripsService {
       where: { id },
       relations: [
         'owner',
-        'associatedEvent',
+        'experience',
+        'place',
         'vehicle',
         'applications',
         'applications.applicant',
@@ -83,11 +87,19 @@ export class TripsService {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('User not found');
 
-    let associatedEvent: Activity | null = null;
-    if (dto.associatedEventTitle) {
-      associatedEvent = await this.activityRepo.findOne({
+    let experience: Activity | null = null;
+    if (dto.experienceId) {
+      experience = await this.activityRepo.findOneBy({ id: dto.experienceId });
+    } else if (dto.associatedEventTitle) {
+      // Backward compatibility
+      experience = await this.activityRepo.findOne({
         where: { title: dto.associatedEventTitle },
       });
+    }
+
+    let place: Place | null = null;
+    if (dto.placeId) {
+      place = await this.placeRepo.findOneBy({ id: dto.placeId });
     }
 
     let vehicle: Vehicle | null = null;
@@ -106,7 +118,8 @@ export class TripsService {
       seatsAvailable: dto.seatsAvailable,
       seatsConfirmed: 0,
       escales: dto.escales || [],
-      associatedEvent: associatedEvent || undefined,
+      experience: experience || undefined,
+      place: place || undefined,
       vehicle: vehicle || undefined,
       status: TripStatus.FILLING,
     });
@@ -149,7 +162,13 @@ export class TripsService {
     if (existing) {
       existing.message = dto.message;
       existing.requestedSeats = dto.requestedSeats;
-      return this.applicationRepo.save(existing);
+      const saved = await this.applicationRepo.save(existing);
+      if (saved.applicant) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { passwordHash, ...applicant } = saved.applicant;
+        saved.applicant = applicant as User;
+      }
+      return saved;
     }
 
     const application = this.applicationRepo.create({
@@ -169,6 +188,12 @@ export class TripsService {
       trip.owner,
     );
 
+    if (saved.applicant) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...applicant } = saved.applicant;
+      saved.applicant = applicant as User;
+    }
+
     return saved;
   }
 
@@ -186,7 +211,13 @@ export class TripsService {
 
     application.message = dto.message;
     application.requestedSeats = dto.requestedSeats;
-    return this.applicationRepo.save(application);
+    const saved = await this.applicationRepo.save(application);
+    if (saved.applicant) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...applicant } = saved.applicant;
+      saved.applicant = applicant as User;
+    }
+    return saved;
   }
 
   async deleteApply(id: string, userId: string) {
@@ -249,7 +280,13 @@ export class TripsService {
     }
 
     application.status = status;
-    return this.applicationRepo.save(application);
+    const saved = await this.applicationRepo.save(application);
+    if (saved.applicant) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...applicant } = saved.applicant;
+      saved.applicant = applicant as User;
+    }
+    return saved;
   }
 
   async findAllApplies(tripId: string, driverId: string) {
@@ -262,9 +299,18 @@ export class TripsService {
       throw new ForbiddenException('Accès refusé.');
     }
 
-    return this.applicationRepo.find({
+    const applications = await this.applicationRepo.find({
       where: { trip: { id: tripId } },
       relations: ['applicant'],
+    });
+
+    return applications.map((app) => {
+      if (app.applicant) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { passwordHash, ...applicant } = app.applicant;
+        app.applicant = applicant as User;
+      }
+      return app;
     });
   }
 
@@ -279,7 +325,13 @@ export class TripsService {
     Object.assign(trip, dto);
     if (dto.startDate) trip.startDate = new Date(dto.startDate);
 
-    return this.tripRepo.save(trip);
+    const saved = await this.tripRepo.save(trip);
+    if (saved.owner) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...owner } = saved.owner;
+      saved.owner = owner as User;
+    }
+    return saved;
   }
 
   async remove(id: string, userId: string) {
@@ -312,7 +364,13 @@ export class TripsService {
     }
 
     trip.status = status;
-    return this.tripRepo.save(trip);
+    const saved = await this.tripRepo.save(trip);
+    if (saved.owner) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...owner } = saved.owner;
+      saved.owner = owner as User;
+    }
+    return saved;
   }
 
   private mapToResponseDto(trip: Trip): TripResponseDto {
@@ -328,7 +386,8 @@ export class TripsService {
       price: trip.price,
       escales: trip.escales || [],
       status: trip.status,
-      associatedEventName: trip.associatedEvent?.title || '',
+      relatedExpName: trip.experience?.title || '',
+      relatedPlaceName: trip.place?.title || '',
       driverName: trip.owner
         ? `${trip.owner.firstName} ${trip.owner.lastName}`.trim()
         : '',

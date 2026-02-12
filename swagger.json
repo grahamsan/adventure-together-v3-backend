@@ -4116,7 +4116,19 @@
           },
           "associatedEventTitle": {
             "type": "string",
-            "example": "Beach Party"
+            "example": "Beach Party",
+            "deprecated": true,
+            "description": "DEPRECATED: Use experienceId instead."
+          },
+          "experienceId": {
+            "type": "string",
+            "description": "ID of the associated experience (activity)",
+            "example": "uuid-of-experience"
+          },
+          "placeId": {
+            "type": "string",
+            "description": "ID of the associated place",
+            "example": "uuid-of-place"
           },
           "escales": {
             "example": [

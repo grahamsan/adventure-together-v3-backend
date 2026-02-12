@@ -97,9 +97,12 @@ export class AuthController {
     description: 'Missing or invalid token.',
     type: UnauthorizedResponseDto,
   })
-  getProfile(@Request() req) {
+  async getProfile(@Request() req) {
     const userId = req.user.sub || req.user.id;
-    return this.userService.findOne(userId);
+    const user = await this.userService.findOne(userId);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...result } = user;
+    return result;
   }
 
   // --- Vérification d'email ---

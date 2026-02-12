@@ -47,10 +47,30 @@ export class CommentsService {
   }
 
   async findAll(experienceId: string) {
-    return this.commentRepo.find({
+    const comments = await this.commentRepo.find({
       where: { activity: { id: experienceId } },
       relations: ['user', 'replies', 'replies.user'],
       order: { createdAt: 'DESC' },
+    });
+
+    // Sanitize user data to remove password hash
+    return comments.map((comment) => {
+      if (comment.user) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { passwordHash, ...user } = comment.user;
+        comment.user = user as User;
+      }
+      if (comment.replies) {
+        comment.replies = comment.replies.map((reply) => {
+          if (reply.user) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { passwordHash, ...user } = reply.user;
+            reply.user = user as User;
+          }
+          return reply;
+        });
+      }
+      return comment;
     });
   }
 
@@ -67,7 +87,15 @@ export class CommentsService {
       );
 
     comment.content = dto.content;
-    return this.commentRepo.save(comment);
+    const savedComment = await this.commentRepo.save(comment);
+
+    if (savedComment.user) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...user } = savedComment.user;
+      savedComment.user = user as User;
+    }
+
+    return savedComment;
   }
 
   async remove(commentId: string, userId: string) {

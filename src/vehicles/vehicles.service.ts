@@ -53,6 +53,10 @@ export class VehiclesService {
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash, ...owner } = vehicle.owner;
+    vehicle.owner = owner as User;
+
     return vehicle;
   }
 
@@ -63,7 +67,15 @@ export class VehiclesService {
   ): Promise<Vehicle> {
     const vehicle = await this.findOne(id, user);
     Object.assign(vehicle, updateVehicleDto);
-    return await this.vehicleRepository.save(vehicle);
+    const savedVehicle = await this.vehicleRepository.save(vehicle);
+
+    if (savedVehicle.owner) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...owner } = savedVehicle.owner;
+      savedVehicle.owner = owner as User;
+    }
+
+    return savedVehicle;
   }
 
   async remove(id: string, user: User): Promise<void> {

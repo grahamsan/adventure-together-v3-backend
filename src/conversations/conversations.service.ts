@@ -90,6 +90,17 @@ export class ConversationsService {
     const isMember = conversation.associatedUsers?.some((u) => u.id === userId);
     if (!isMember) throw new ForbiddenException('Access denied');
 
+    // Sanitize associatedUsers to remove password hash
+    if (conversation.associatedUsers) {
+      conversation.associatedUsers = conversation.associatedUsers.map(
+        (user) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { passwordHash, ...sanitizedUser } = user;
+          return sanitizedUser as User;
+        },
+      );
+    }
+
     return conversation;
   }
 

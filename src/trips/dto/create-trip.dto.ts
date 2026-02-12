@@ -46,10 +46,34 @@ export class CreateTripDto {
   seatsAvailable: number;
 
   // Optional: associated event title or ID (frontend sends title usually per doc, but ID is better)
-  @ApiProperty({ example: 'Beach Party' })
+  @ApiProperty({
+    example: 'Beach Party',
+    deprecated: true,
+    description: 'DEPRECATED: Use experienceId instead.',
+  })
   @IsOptional()
   @IsString()
   associatedEventTitle?: string;
+
+  @ApiProperty({
+    name: 'experienceId',
+    description: 'ID of the associated experience (activity)',
+    example: 'uuid-of-experience',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  experienceId?: string;
+
+  @ApiProperty({
+    name: 'placeId',
+    description: 'ID of the associated place',
+    example: 'uuid-of-place',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  placeId?: string;
 
   @ApiProperty({ example: ['Bohicon', 'Dassa'] })
   @IsOptional()

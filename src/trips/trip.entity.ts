@@ -10,6 +10,7 @@ import {
 import { User } from '../users/entities/user.entity';
 import { TripActivity } from '../trip-activity/trip-activity.entity';
 import { Activity } from '../activity/activity.entity';
+import { Place } from '../places/place.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { Like } from '../likes/like.entity';
 import { Conversation } from '../conversations/conversation.entity';
@@ -55,7 +56,10 @@ export class Trip {
   escales: string[];
 
   @ManyToOne(() => Activity, { nullable: true })
-  associatedEvent?: Activity;
+  experience?: Activity;
+
+  @ManyToOne(() => Place, { nullable: true })
+  place?: Place;
 
   @ManyToOne(() => Vehicle, { nullable: true })
   vehicle?: Vehicle;

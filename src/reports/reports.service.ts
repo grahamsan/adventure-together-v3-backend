@@ -27,7 +27,13 @@ export class ReportsService {
       status: ReportStatus.NEW,
     });
 
-    return this.reportRepo.save(report);
+    const savedReport = await this.reportRepo.save(report);
+    if (savedReport.reporter) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...reporter } = savedReport.reporter;
+      savedReport.reporter = reporter as User;
+    }
+    return savedReport;
   }
 
   async updateStatus(id: string, dto: UpdateReportStatusDto): Promise<Report> {
@@ -39,7 +45,13 @@ export class ReportsService {
       report.processedAt = new Date();
     }
 
-    return this.reportRepo.save(report);
+    const savedReport = await this.reportRepo.save(report);
+    if (savedReport.reporter) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...reporter } = savedReport.reporter;
+      savedReport.reporter = reporter as User;
+    }
+    return savedReport;
   }
 
   async findAll(query: { search?: string; type?: ReportEntityType }) {
@@ -103,7 +115,16 @@ export class ReportsService {
     // Step 2: Filter main query
     qb.andWhere('report.entityId IN (:...ids)', { ids: alertIds });
 
-    return qb.getMany();
+    const reports = await qb.getMany();
+
+    return reports.map((report) => {
+      if (report.reporter) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { passwordHash, ...reporter } = report.reporter;
+        report.reporter = reporter as User;
+      }
+      return report;
+    });
   }
 
   async countTotalReports(): Promise<number> {
