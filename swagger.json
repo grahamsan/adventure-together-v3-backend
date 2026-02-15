@@ -4054,8 +4054,13 @@
               "done"
             ]
           },
-          "associatedEventName": {
-            "type": "string"
+          "relatedExpName": {
+            "type": "string",
+            "description": "Name of the related experience, if any"
+          },
+          "relatedPlaceName": {
+            "type": "string",
+            "description": "Name of the related place, if any"
           },
           "driverName": {
             "type": "string",
@@ -4078,7 +4083,8 @@
           "price",
           "escales",
           "status",
-          "associatedEventName",
+          "relatedExpName",
+          "relatedPlaceName",
           "driverName",
           "vehicleModel"
         ]
