@@ -12,10 +12,12 @@ import { Place } from '../places/place.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { TripApplication } from './trip-application.entity';
 import { CreateTripDto } from './dto/create-trip.dto';
+import { GetTripsQueryDto } from './dto/get-trips-query.dto';
 import { TripResponseDto } from './dto/trip-response.dto';
 import { ApplyToTripDto } from './dto/apply-to-trip.dto';
-import { RequestStatus, TripStatus } from '../common/enums';
+import { RequestStatus, TripStatus, UserRole } from '../common/enums';
 import { ConversationsService } from '../conversations/conversations.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TripsService {
@@ -33,16 +35,109 @@ export class TripsService {
     @InjectRepository(TripApplication)
     private readonly applicationRepo: Repository<TripApplication>,
     private readonly conversationsService: ConversationsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
-  async findAll(): Promise<TripResponseDto[]> {
-    const trips = await this.tripRepo.find({
-      where: { status: TripStatus.FILLING },
-      relations: ['owner', 'experience', 'place', 'vehicle'],
-      order: { startDate: 'ASC' },
-    });
+  async findAll(
+    queryDto: GetTripsQueryDto,
+    userId?: string,
+  ): Promise<TripResponseDto[]> {
+    const {
+      search,
+      imminent,
+      month,
+      nextMonth,
+      date,
+      experienceId,
+      from,
+      to,
+      page = 1,
+      limit = 20,
+    } = queryDto;
 
-    return trips.map((trip) => this.mapToResponseDto(trip));
+    const queryBuilder = this.tripRepo.createQueryBuilder('trip');
+
+    queryBuilder
+      .leftJoinAndSelect('trip.owner', 'owner')
+      .leftJoinAndSelect('trip.experience', 'experience')
+      .leftJoinAndSelect('trip.place', 'place')
+      .leftJoinAndSelect('trip.vehicle', 'vehicle')
+      .leftJoinAndSelect('trip.applications', 'applications')
+      .leftJoinAndSelect('applications.applicant', 'applicant')
+      .where('trip.status = :status', { status: TripStatus.FILLING });
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(LOWER(trip.from) LIKE :search OR LOWER(trip.to) LIKE :search OR LOWER(trip.description) LIKE :search)',
+        { search: `%${search.toLowerCase()}%` },
+      );
+    }
+
+    if (from) {
+      queryBuilder.andWhere('LOWER(trip.from) LIKE :from', {
+        from: `%${from.toLowerCase()}%`,
+      });
+    }
+
+    if (to) {
+      queryBuilder.andWhere('LOWER(trip.to) LIKE :to', {
+        to: `%${to.toLowerCase()}%`,
+      });
+    }
+
+    if (experienceId) {
+      queryBuilder.andWhere('experience.id = :experienceId', { experienceId });
+    }
+
+    const now = new Date();
+
+    if (imminent) {
+      const nextWeek = new Date();
+      nextWeek.setDate(now.getDate() + 7);
+      queryBuilder.andWhere('trip.startDate BETWEEN :now AND :nextWeek', {
+        now,
+        nextWeek,
+      });
+    }
+
+    if (month) {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      queryBuilder.andWhere(
+        'trip.startDate BETWEEN :startOfMonth AND :endOfMonth',
+        {
+          startOfMonth,
+          endOfMonth,
+        },
+      );
+    }
+
+    if (nextMonth) {
+      const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+      queryBuilder.andWhere(
+        'trip.startDate BETWEEN :startOfNextMonth AND :endOfNextMonth',
+        {
+          startOfNextMonth: nextMonthDate,
+          endOfNextMonth: endOfNextMonth,
+        },
+      );
+    }
+
+    if (date) {
+      queryBuilder.andWhere('DATE(trip.startDate) = :specificDate', {
+        specificDate: date,
+      });
+    }
+
+    queryBuilder
+      .orderBy('trip.startDate', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const trips = await queryBuilder.getMany();
+
+    return trips.map((trip) => this.mapToResponseDto(trip, userId));
   }
 
   async findOne(id: string, userId?: string): Promise<TripResponseDto> {
@@ -80,12 +175,18 @@ export class TripsService {
       }
     }
 
-    return this.mapToResponseDto(trip);
+    return this.mapToResponseDto(trip, userId);
   }
 
   async create(dto: CreateTripDto, userId: string): Promise<TripResponseDto> {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('User not found');
+
+    if (user.role !== UserRole.DRIVER) {
+      throw new ForbiddenException(
+        'Seuls les conducteurs peuvent créer des voyages.',
+      );
+    }
 
     let experience: Activity | null = null;
     if (dto.experienceId) {
@@ -129,9 +230,10 @@ export class TripsService {
     // Automated Messaging: Create group conversation
     await this.conversationsService.createTripGroupConversation(saved, user);
 
-    return this.mapToResponseDto(saved);
+    return this.mapToResponseDto(saved, userId);
   }
 
+  // --- After the new application is created, notify the driver ---
   async apply(tripId: string, dto: ApplyToTripDto, userId: string) {
     const trip = await this.tripRepo.findOne({
       where: { id: tripId },
@@ -141,11 +243,17 @@ export class TripsService {
 
     // Participants cannot apply to a trip with status incoming or done
     if (trip.status !== TripStatus.FILLING) {
-      throw new NotFoundException('Ce voyage n’accepte plus de candidatures.');
+      throw new NotFoundException("Ce voyage n'accepte plus de candidatures.");
     }
 
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('User not found');
+
+    if (user.role !== UserRole.PARTICIPANT) {
+      throw new ForbiddenException(
+        'Seuls les participants peuvent postuler à un voyage.',
+      );
+    }
 
     // Validation Rules: If requestedSeats is greater than the number of available seats
     if (dto.requestedSeats > trip.seatsAvailable) {
@@ -186,7 +294,11 @@ export class TripsService {
       trip,
       user,
       trip.owner,
+      saved,
     );
+
+    // Notify the driver of the new application
+    await this.notificationsService.notifyDriverOfApplication(trip, user);
 
     if (saved.applicant) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -281,6 +393,14 @@ export class TripsService {
 
     application.status = status;
     const saved = await this.applicationRepo.save(application);
+
+    // Notify the applicant of the decision
+    await this.notificationsService.notifyApplicantOfDecision(
+      trip,
+      application.applicant,
+      status,
+    );
+
     if (saved.applicant) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...applicant } = saved.applicant;
@@ -326,6 +446,16 @@ export class TripsService {
     if (dto.startDate) trip.startDate = new Date(dto.startDate);
 
     const saved = await this.tripRepo.save(trip);
+
+    // Notify trip members of the update
+    const fullTrip = await this.tripRepo.findOne({
+      where: { id },
+      relations: ['owner'],
+    });
+    if (fullTrip) {
+      await this.notificationsService.notifyTripMembersOfUpdate(fullTrip);
+    }
+
     if (saved.owner) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...owner } = saved.owner;
@@ -373,7 +503,11 @@ export class TripsService {
     return saved;
   }
 
-  private mapToResponseDto(trip: Trip): TripResponseDto {
+  private mapToResponseDto(trip: Trip, userId?: string): TripResponseDto {
+    const hasApplied =
+      !!userId &&
+      !!trip.applications?.some((app) => app.applicant?.id === userId);
+
     return {
       id: trip.id,
       from: trip.from,
@@ -388,12 +522,23 @@ export class TripsService {
       status: trip.status,
       relatedExpName: trip.experience?.title || '',
       relatedPlaceName: trip.place?.title || '',
+      hasApplied,
       driverName: trip.owner
         ? `${trip.owner.firstName} ${trip.owner.lastName}`.trim()
         : '',
       vehicleModel: trip.vehicle
         ? `${trip.vehicle.brand} ${trip.vehicle.model}`
         : undefined,
+      creator: {
+        firstName: trip.owner?.firstName ?? null,
+        lastName: trip.owner?.lastName ?? null,
+        avatarUrl: trip.owner?.avatarUrl ?? null,
+        bio: trip.owner?.bio ?? null,
+        phoneNumber: trip.owner?.phoneNumber ?? null,
+        dateOfBirth: trip.owner?.dateOfBirth
+          ? new Date(trip.owner.dateOfBirth).toISOString().split('T')[0]
+          : null,
+      },
     };
   }
 }

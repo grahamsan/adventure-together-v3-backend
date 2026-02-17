@@ -1,6 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TripStatus } from '../../common/enums';
 
+export class CreatorDto {
+  @ApiProperty({ nullable: true })
+  firstName: string | null;
+
+  @ApiProperty({ nullable: true })
+  lastName: string | null;
+
+  @ApiProperty({ nullable: true })
+  avatarUrl: string | null;
+
+  @ApiProperty({ nullable: true })
+  bio: string | null;
+
+  @ApiProperty({ nullable: true })
+  phoneNumber: string | null;
+
+  @ApiProperty({ nullable: true })
+  dateOfBirth: string | null;
+}
+
 export class TripResponseDto {
   @ApiProperty()
   id: string;
@@ -46,4 +66,12 @@ export class TripResponseDto {
 
   @ApiProperty({ nullable: true })
   vehicleModel?: string;
+
+  @ApiProperty()
+  creator: CreatorDto;
+
+  @ApiProperty({
+    description: 'True if the current user has applied to this trip',
+  })
+  hasApplied: boolean;
 }

@@ -12,7 +12,10 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { MessageResponseDto } from './dto/message-response.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { Trip } from '../trips/trip.entity';
+import { TripApplication } from '../trips/trip-application.entity';
 import { ConversationType, TripStatus } from '../common/enums';
+import { TripMessageGateway } from './trip-message.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ConversationsService {
@@ -23,6 +26,8 @@ export class ConversationsService {
     private readonly messageRepo: Repository<Message>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly tripMessageGateway: TripMessageGateway,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findAll(userId: string) {
@@ -41,6 +46,7 @@ export class ConversationsService {
       .leftJoinAndSelect('conversation.associatedUsers', 'user')
       .leftJoinAndSelect('conversation.activity', 'activity')
       .leftJoinAndSelect('conversation.trip', 'trip')
+      .leftJoinAndSelect('conversation.tripApplication', 'tripApplication')
       .leftJoinAndSelect('conversation.messages', 'message')
       .leftJoinAndSelect('message.sender', 'sender')
       .where('conversation.id IN (:...ids)', { ids: conversationIds })
@@ -68,6 +74,11 @@ export class ConversationsService {
         lastMessage: c.messages?.[0]
           ? this.mapMessageToDto(c.messages[0])
           : null,
+        applyId: c.tripApplication?.id || undefined,
+        destinataireId:
+          c.type === ConversationType.USER2USER && c.associatedUsers
+            ? c.associatedUsers.find((u) => u.id !== userId)?.id || null
+            : null,
       };
     });
   }
@@ -78,7 +89,9 @@ export class ConversationsService {
       relations: [
         'associatedUsers',
         'activity',
+        'activity',
         'trip',
+        'tripApplication',
         'messages',
         'messages.sender',
       ],
@@ -101,7 +114,16 @@ export class ConversationsService {
       );
     }
 
-    return conversation;
+    return {
+      ...conversation,
+      applyId: conversation.tripApplication?.id || undefined,
+      destinataireId:
+        conversation.type === ConversationType.USER2USER &&
+        conversation.associatedUsers
+          ? conversation.associatedUsers.find((u) => u.id !== userId)?.id ||
+            null
+          : null,
+    };
   }
 
   async getMessages(
@@ -128,26 +150,22 @@ export class ConversationsService {
     trip: Trip,
     applicant: User,
     driver: User,
+    application: TripApplication,
   ) {
-    // Check if exists
+    // Check if exists for this specific application
     const existing = await this.conversationRepo.findOne({
       where: {
-        type: ConversationType.USER2USER,
-        trip: { id: trip.id },
+        tripApplication: { id: application.id },
       },
       relations: ['associatedUsers'],
     });
 
-    if (existing && existing.associatedUsers) {
-      const userIds = existing.associatedUsers.map((u) => u.id);
-      if (userIds.includes(applicant.id) && userIds.includes(driver.id)) {
-        return existing;
-      }
-    }
+    if (existing) return existing;
 
     const conversation = this.conversationRepo.create({
       type: ConversationType.USER2USER,
       trip,
+      tripApplication: application,
       associatedUsers: [applicant, driver],
     });
     return this.conversationRepo.save(conversation);
@@ -201,7 +219,28 @@ export class ConversationsService {
       updatedAt: new Date(),
     });
 
-    return this.mapMessageToDto(saved);
+    const messageResponse = this.mapMessageToDto(saved);
+    this.tripMessageGateway.server
+      .to(conversationId)
+      .emit('newMessage', messageResponse);
+
+    // Send notification to all conversation members except the sender
+    const convName =
+      conversation.name ||
+      (conversation.activity
+        ? conversation.activity.title
+        : conversation.trip
+          ? `Trajet: ${conversation.trip.from} -> ${conversation.trip.to}`
+          : 'Conversation');
+    const recipients = conversation.associatedUsers || [];
+    await this.notificationsService.notifyNewMessage(
+      conversationId,
+      sender,
+      recipients,
+      convName,
+    );
+
+    return messageResponse;
   }
 
   async updateMessage(

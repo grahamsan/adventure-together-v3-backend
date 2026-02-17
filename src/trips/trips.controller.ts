@@ -9,6 +9,7 @@ import {
   Delete,
   Patch,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,6 +18,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -24,6 +26,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, RequestStatus, TripStatus } from '../common/enums';
 import { TripsService } from './trips.service';
 import { CreateTripDto } from './dto/create-trip.dto';
+import { GetTripsQueryDto } from './dto/get-trips-query.dto';
 import { ApplyToTripDto } from './dto/apply-to-trip.dto';
 import { TripResponseDto } from './dto/trip-response.dto';
 import {
@@ -53,8 +56,8 @@ export class TripsController {
     description: 'Missing or invalid token.',
     type: UnauthorizedResponseDto,
   })
-  findAll() {
-    return this.tripsService.findAll();
+  findAll(@Request() req, @Query() query: GetTripsQueryDto) {
+    return this.tripsService.findAll(query, req.user?.id);
   }
 
   @Post()

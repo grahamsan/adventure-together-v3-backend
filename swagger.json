@@ -851,10 +851,51 @@
         "operationId": "ExperiencesController_findAll",
         "parameters": [
           {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imminent",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "nextMonth",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "required": false,
             "in": "query",
             "schema": {
+              "default": 1,
               "example": 1,
               "type": "number"
             }
@@ -864,6 +905,7 @@
             "required": false,
             "in": "query",
             "schema": {
+              "default": 20,
               "example": 20,
               "type": "number"
             }
@@ -960,6 +1002,56 @@
           }
         ],
         "summary": "Create a new experience (Organizer only)",
+        "tags": [
+          "Experiences"
+        ]
+      }
+    },
+    "/experiences/trips": {
+      "get": {
+        "operationId": "ExperiencesController_getTripsByExperience",
+        "parameters": [
+          {
+            "name": "x-experience-id",
+            "required": true,
+            "in": "header",
+            "description": "ID of the experience",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of trips associated with the experience.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TripResponseDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing experience ID in header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get trips associated with an experience (ID in header)",
         "tags": [
           "Experiences"
         ]
@@ -1078,7 +1170,90 @@
     "/trips": {
       "get": {
         "operationId": "TripsController_findAll",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imminent",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "month",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "nextMonth",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "experienceId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "List of filling trips.",
@@ -1937,6 +2112,94 @@
         "summary": "Mark conversation messages as read",
         "tags": [
           "Conversations"
+        ]
+      }
+    },
+    "/notifications": {
+      "get": {
+        "operationId": "NotificationsController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get paginated notifications for the current user",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a notification as read",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "operationId": "NotificationsController_markAllAsRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark all notifications as read",
+        "tags": [
+          "Notifications"
         ]
       }
     },
@@ -3963,51 +4226,41 @@
           "limit"
         ]
       },
-      "CreateExperienceDto": {
+      "CreatorDto": {
         "type": "object",
         "properties": {
-          "title": {
-            "type": "string",
-            "example": "Beach Party Cotonou",
-            "minLength": 2
+          "firstName": {
+            "type": "object",
+            "nullable": true
           },
-          "description": {
-            "type": "string",
-            "example": "An amazing beach party experience",
-            "minLength": 2
+          "lastName": {
+            "type": "object",
+            "nullable": true
           },
-          "location": {
-            "type": "string",
-            "example": "Cotonou, Benin",
-            "minLength": 2
+          "avatarUrl": {
+            "type": "object",
+            "nullable": true
           },
-          "dateStart": {
-            "type": "string",
-            "example": "2026-02-01T10:00:00Z"
+          "bio": {
+            "type": "object",
+            "nullable": true
           },
-          "dateEnd": {
-            "type": "string",
-            "example": "2026-02-02T18:00:00Z"
+          "phoneNumber": {
+            "type": "object",
+            "nullable": true
           },
-          "type": {
-            "type": "string",
-            "enum": [
-              "road-trip",
-              "event"
-            ],
-            "default": "event"
-          },
-          "image": {
-            "type": "string",
-            "example": "https://example.com/image.jpg"
+          "dateOfBirth": {
+            "type": "object",
+            "nullable": true
           }
         },
         "required": [
-          "title",
-          "description",
-          "location",
-          "dateStart",
-          "dateEnd"
+          "firstName",
+          "lastName",
+          "avatarUrl",
+          "bio",
+          "phoneNumber",
+          "dateOfBirth"
         ]
       },
       "TripResponseDto": {
@@ -4069,6 +4322,13 @@
           "vehicleModel": {
             "type": "string",
             "nullable": true
+          },
+          "creator": {
+            "$ref": "#/components/schemas/CreatorDto"
+          },
+          "hasApplied": {
+            "type": "boolean",
+            "description": "True if the current user has applied to this trip"
           }
         },
         "required": [
@@ -4086,7 +4346,56 @@
           "relatedExpName",
           "relatedPlaceName",
           "driverName",
-          "vehicleModel"
+          "vehicleModel",
+          "creator",
+          "hasApplied"
+        ]
+      },
+      "CreateExperienceDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Beach Party Cotonou",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "example": "An amazing beach party experience",
+            "minLength": 2
+          },
+          "location": {
+            "type": "string",
+            "example": "Cotonou, Benin",
+            "minLength": 2
+          },
+          "dateStart": {
+            "type": "string",
+            "example": "2026-02-01T10:00:00Z"
+          },
+          "dateEnd": {
+            "type": "string",
+            "example": "2026-02-02T18:00:00Z"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "road-trip",
+              "event"
+            ],
+            "default": "event"
+          },
+          "image": {
+            "type": "string",
+            "example": "https://example.com/image.jpg"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "location",
+          "dateStart",
+          "dateEnd"
         ]
       },
       "CreateTripDto": {

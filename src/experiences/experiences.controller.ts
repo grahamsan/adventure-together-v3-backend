@@ -8,6 +8,8 @@ import {
   Query,
   Param,
   ParseIntPipe,
+  Headers,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,6 +18,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiHeader,
 } from '@nestjs/swagger';
 import {
   BadRequestResponseDto,
@@ -34,6 +37,8 @@ import {
   ExperienceResponseDto,
   ExperienceFeedResponseDto,
 } from './dto/experience-response.dto';
+import { GetExperiencesQueryDto } from './dto/get-experiences-query.dto';
+import { TripResponseDto } from '../trips/dto/trip-response.dto';
 
 @ApiTags('Experiences')
 @Controller('experiences')
@@ -57,10 +62,43 @@ export class ExperiencesController {
     type: UnauthorizedResponseDto,
   })
   async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query() query: GetExperiencesQueryDto,
   ): Promise<ExperienceFeedResponseDto> {
-    return this.experiencesService.findAll(page, limit);
+    return this.experiencesService.findAll(query);
+  }
+
+  @Get('trips')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get trips associated with an experience (ID in header)',
+  })
+  @ApiHeader({
+    name: 'x-experience-id',
+    description: 'ID of the experience',
+    required: true,
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'List of trips associated with the experience.',
+    type: [TripResponseDto],
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Missing experience ID in header.',
+    type: BadRequestResponseDto,
+  })
+  async getTripsByExperience(
+    @Request() req,
+    @Headers('x-experience-id') experienceId: string,
+  ): Promise<TripResponseDto[]> {
+    if (!experienceId) {
+      throw new BadRequestException('Missing x-experience-id header');
+    }
+    return this.experiencesService.findTripsByExperience(
+      experienceId,
+      req.user.id,
+    );
   }
 
   @Get(':id')

@@ -8,6 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { Activity } from '../activity/activity.entity';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { ConversationsModule } from '../conversations/conversations.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { Place } from '../places/place.entity';
 
 @Module({
@@ -21,6 +22,7 @@ import { Place } from '../places/place.entity';
       Place,
     ]),
     ConversationsModule,
+    NotificationsModule,
   ],
   controllers: [TripsController],
   providers: [TripsService],

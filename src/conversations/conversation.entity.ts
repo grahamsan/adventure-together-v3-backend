@@ -9,12 +9,15 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ConversationType } from '../common/enums';
 import { User } from '../users/entities/user.entity';
 import { Message } from '../messages/message.entity';
 import { Activity } from '../activity/activity.entity';
 import { Trip } from '../trips/trip.entity';
+import { TripApplication } from '../trips/trip-application.entity';
 
 @Entity('conversations')
 export class Conversation {
@@ -32,6 +35,10 @@ export class Conversation {
     onDelete: 'CASCADE',
   })
   trip?: Trip;
+
+  @OneToOne(() => TripApplication, { nullable: true })
+  @JoinColumn()
+  tripApplication?: TripApplication;
 
   @Column({
     type: 'enum',

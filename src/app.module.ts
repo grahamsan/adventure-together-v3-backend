@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -31,6 +32,7 @@ import { CommentsModule } from './comments/comments.module';
 import { Comment } from './comments/comment.entity';
 import { CommentInteraction } from './comments/comment-interaction.entity';
 import { UploadModule } from './upload/upload.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -39,6 +41,7 @@ dotenv.config();
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: () => ({
@@ -85,6 +88,7 @@ dotenv.config();
     UsersStatsModule,
     CommentsModule,
     UploadModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

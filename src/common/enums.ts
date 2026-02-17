@@ -71,6 +71,12 @@ export enum NotificationPriority {
   HIGH = 'high',
 }
 
+export enum NotificationType {
+  TRIP = 'trip',
+  MESSAGE = 'message',
+  REMINDER = 'reminder',
+}
+
 export enum ReportStatus {
   NEW = 'Nouveau',
   PROCESSED = 'Traité',

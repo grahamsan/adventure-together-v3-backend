@@ -5,8 +5,12 @@ import { Activity } from '../activity/activity.entity';
 import { User } from '../users/entities/user.entity';
 import { Like } from '../likes/like.entity';
 import { CreateExperienceDto } from './dto/create-experience.dto';
+import { GetExperiencesQueryDto } from './dto/get-experiences-query.dto';
 import { ExperienceResponseDto } from './dto/experience-response.dto';
 import { ActivityType } from '../common/enums';
+import { TripsService } from '../trips/trips.service';
+import { TripResponseDto } from '../trips/dto/trip-response.dto';
+import { GetTripsQueryDto } from '../trips/dto/get-trips-query.dto';
 
 @Injectable()
 export class ExperiencesService {
@@ -17,27 +21,89 @@ export class ExperiencesService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Like)
     private readonly likeRepo: Repository<Like>,
+    private readonly tripsService: TripsService,
   ) {}
 
   /**
    * Get all experiences for the feed
    */
-  async findAll(
-    page = 1,
-    limit = 20,
-  ): Promise<{
+  async findAll(queryDto: GetExperiencesQueryDto): Promise<{
     data: ExperienceResponseDto[];
     total: number;
     page: number;
     limit: number;
   }> {
-    const [activities, total] = await this.activityRepo.findAndCount({
-      where: { status: 'published' },
-      relations: ['promoter', 'participants', 'conversations', 'requests'],
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const {
+      search,
+      imminent,
+      month,
+      nextMonth,
+      date,
+      page = 1,
+      limit = 20,
+    } = queryDto;
+
+    const queryBuilder = this.activityRepo.createQueryBuilder('activity');
+
+    queryBuilder
+      .leftJoinAndSelect('activity.promoter', 'promoter')
+      .leftJoinAndSelect('activity.participants', 'participants')
+      .leftJoinAndSelect('activity.conversations', 'conversations')
+      .leftJoinAndSelect('activity.requests', 'requests')
+      .where('activity.status = :status', { status: 'published' });
+
+    if (search) {
+      queryBuilder.andWhere('LOWER(activity.title) LIKE :search', {
+        search: `%${search.toLowerCase()}%`,
+      });
+    }
+
+    const now = new Date();
+
+    if (imminent) {
+      const nextWeek = new Date();
+      nextWeek.setDate(now.getDate() + 7);
+      queryBuilder.andWhere(
+        'activity.date BETWEEN :now AND :nextWeek OR activity.startDate BETWEEN :now AND :nextWeek',
+        { now, nextWeek },
+      );
+    }
+
+    if (month) {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      queryBuilder.andWhere(
+        '(activity.date BETWEEN :startOfMonth AND :endOfMonth) OR (activity.startDate BETWEEN :startOfMonth AND :endOfMonth)',
+        { startOfMonth, endOfMonth },
+      );
+    }
+
+    if (nextMonth) {
+      const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+      queryBuilder.andWhere(
+        '(activity.date BETWEEN :startOfNextMonth AND :endOfNextMonth) OR (activity.startDate BETWEEN :startOfNextMonth AND :endOfNextMonth)',
+        {
+          startOfNextMonth: nextMonthDate,
+          endOfNextMonth: endOfNextMonth,
+        },
+      );
+    }
+
+    if (date) {
+      // Assuming 'date' is a YYYY-MM-DD string
+      queryBuilder.andWhere(
+        'DATE(activity.date) = :specificDate OR DATE(activity.startDate) = :specificDate',
+        { specificDate: date },
+      );
+    }
+
+    queryBuilder
+      .orderBy('activity.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [activities, total] = await queryBuilder.getManyAndCount();
 
     const data = activities.map((activity) => this.mapToResponseDto(activity));
 
@@ -130,6 +196,19 @@ export class ExperiencesService {
 
     await this.activityRepo.save(activity);
     return { likesCount: activity.likesCount, isLiked };
+  }
+
+  /**
+   * Get trips associated with an experience
+   */
+  async findTripsByExperience(
+    experienceId: string,
+    userId: string,
+  ): Promise<TripResponseDto[]> {
+    const query = new GetTripsQueryDto();
+    query.experienceId = experienceId;
+    // We can add other default filters if needed, but for now just filter by experienceId
+    return this.tripsService.findAll(query, userId);
   }
 
   /**
