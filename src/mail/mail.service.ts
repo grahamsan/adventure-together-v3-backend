@@ -288,7 +288,7 @@ export class MailService {
    * Envoyer un email simple (texte brut)
    */
   async sendMail(to: string, subject: string, text: string) {
-    const appName = process.env.APP_NAME || 'Ton App';
+    const appName = process.env.APP_NAME || 'AdventureTogether';
     const mailUser = process.env.MAIL_USER || 'noreply@example.com';
 
     await this.transporter.sendMail({
@@ -327,7 +327,7 @@ export class MailService {
     htmlContent = htmlContent.replace('{{codeSection}}', codeSection);
     htmlContent = htmlContent.replace('{{ctaSection}}', ctaSection);
 
-    const appName = process.env.APP_NAME || 'Ton App';
+    const appName = process.env.APP_NAME || 'AdventureTogether';
     const mailUser = process.env.MAIL_USER || 'noreply@example.com';
 
     await this.transporter.sendMail({

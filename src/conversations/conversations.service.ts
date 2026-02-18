@@ -54,10 +54,15 @@ export class ConversationsService {
       .getMany();
 
     return fullConversations.map((c) => {
-      // Calculate unread count
       const unreadCount =
         c.messages?.filter((m) => !m.readByUserIds?.includes(userId)).length ||
         0;
+
+      // Recherche de l'autre utilisateur pour les conversations privées
+      const otherUser =
+        c.type === ConversationType.USER2USER
+          ? c.associatedUsers?.find((u) => u.id !== userId)
+          : null;
 
       return {
         id: c.id,
@@ -74,11 +79,14 @@ export class ConversationsService {
         lastMessage: c.messages?.[0]
           ? this.mapMessageToDto(c.messages[0])
           : null,
-        applyId: c.tripApplication?.id || undefined,
-        destinataireId:
-          c.type === ConversationType.USER2USER && c.associatedUsers
-            ? c.associatedUsers.find((u) => u.id !== userId)?.id || null
-            : null,
+        applyId: c.tripApplication?.id || null, // Utilisation de null pour forcer l'affichage dans le JSON [cite: 18, 19]
+        tripId: c.trip?.id || null,
+        destinataireId: otherUser?.id || null,
+        destinataireName: otherUser
+          ? otherUser.firstName
+            ? `${otherUser.firstName} ${otherUser.lastName}`.trim()
+            : otherUser.name
+          : null, // Retourne le nom complet si disponible [cite: 49, 50]
       };
     });
   }
@@ -114,15 +122,21 @@ export class ConversationsService {
       );
     }
 
+    const otherUser =
+      conversation.type === ConversationType.USER2USER
+        ? conversation.associatedUsers?.find((u) => u.id !== userId)
+        : null;
+
     return {
       ...conversation,
-      applyId: conversation.tripApplication?.id || undefined,
-      destinataireId:
-        conversation.type === ConversationType.USER2USER &&
-        conversation.associatedUsers
-          ? conversation.associatedUsers.find((u) => u.id !== userId)?.id ||
-            null
-          : null,
+      applyId: conversation.tripApplication?.id || null, // Correction undefined -> null [cite: 18, 19]
+      tripId: conversation.trip?.id || null,
+      destinataireId: otherUser?.id || null,
+      destinataireName: otherUser
+        ? otherUser.firstName
+          ? `${otherUser.firstName} ${otherUser.lastName}`.trim()
+          : otherUser.name
+        : null,
     };
   }
 
@@ -164,8 +178,8 @@ export class ConversationsService {
 
     const conversation = this.conversationRepo.create({
       type: ConversationType.USER2USER,
-      trip,
-      tripApplication: application,
+      trip: { id: trip.id },
+      tripApplication: { id: application.id },
       associatedUsers: [applicant, driver],
     });
     return this.conversationRepo.save(conversation);
