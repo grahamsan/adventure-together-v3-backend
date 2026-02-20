@@ -19,6 +19,9 @@ export class ExperienceStatsDto {
   likes: number;
 
   @ApiProperty()
+  hasLiked: boolean;
+
+  @ApiProperty()
   trips: number;
 }
 

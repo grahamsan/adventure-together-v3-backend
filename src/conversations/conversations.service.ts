@@ -79,7 +79,8 @@ export class ConversationsService {
         lastMessage: c.messages?.[0]
           ? this.mapMessageToDto(c.messages[0])
           : null,
-        applyId: c.tripApplication?.id || null, // Utilisation de null pour forcer l'affichage dans le JSON [cite: 18, 19]
+        applyId: c.tripApplication?.id || null,
+        applyStatus: c.tripApplication?.status || null,
         tripId: c.trip?.id || null,
         destinataireId: otherUser?.id || null,
         destinataireName: otherUser

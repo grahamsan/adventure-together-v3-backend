@@ -1154,6 +1154,9 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "User has already liked this experience."
           }
         },
         "security": [
@@ -4150,6 +4153,9 @@
           "likes": {
             "type": "number"
           },
+          "hasLiked": {
+            "type": "boolean"
+          },
           "trips": {
             "type": "number"
           }
@@ -4158,6 +4164,7 @@
           "interests",
           "comments",
           "likes",
+          "hasLiked",
           "trips"
         ]
       },
@@ -4225,6 +4232,10 @@
           "page",
           "limit"
         ]
+      },
+      "Vehicle": {
+        "type": "object",
+        "properties": {}
       },
       "CreatorDto": {
         "type": "object",
@@ -4323,6 +4334,14 @@
             "type": "string",
             "nullable": true
           },
+          "vehicle": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Vehicle"
+              }
+            ]
+          },
           "creator": {
             "$ref": "#/components/schemas/CreatorDto"
           },
@@ -4347,6 +4366,7 @@
           "relatedPlaceName",
           "driverName",
           "vehicleModel",
+          "vehicle",
           "creator",
           "hasApplied"
         ]

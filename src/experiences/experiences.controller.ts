@@ -62,9 +62,10 @@ export class ExperiencesController {
     type: UnauthorizedResponseDto,
   })
   async findAll(
+    @Request() req,
     @Query() query: GetExperiencesQueryDto,
   ): Promise<ExperienceFeedResponseDto> {
-    return this.experiencesService.findAll(query);
+    return this.experiencesService.findAll(query, req.user.id);
   }
 
   @Get('trips')
@@ -116,8 +117,11 @@ export class ExperiencesController {
     description: 'Experience not found.',
     type: NotFoundResponseDto,
   })
-  async findOne(@Param('id') id: string): Promise<ExperienceResponseDto> {
-    return this.experiencesService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<ExperienceResponseDto> {
+    return this.experiencesService.findOne(id, req.user.id);
   }
 
   @Post()
@@ -177,6 +181,10 @@ export class ExperiencesController {
     status: HttpStatus.NOT_FOUND,
     description: 'Experience not found.',
     type: NotFoundResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'User has already liked this experience.',
   })
   async toggleLike(@Param('id') id: string, @Request() req) {
     return this.experiencesService.toggleLike(id, req.user.id);

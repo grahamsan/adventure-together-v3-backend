@@ -529,6 +529,14 @@ export class TripsService {
       vehicleModel: trip.vehicle
         ? `${trip.vehicle.brand} ${trip.vehicle.model}`
         : undefined,
+      vehicle: {
+        //@ts-ignore
+        id: trip.vehicle?.id,
+        brand: trip.vehicle?.brand,
+        model: trip.vehicle?.model,
+        plateNumber: trip.vehicle?.plateNumber,
+        imageUrl: trip.vehicle?.imageUrl,
+      },
       creator: {
         firstName: trip.owner?.firstName ?? null,
         lastName: trip.owner?.lastName ?? null,

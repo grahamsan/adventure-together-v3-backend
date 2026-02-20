@@ -19,11 +19,11 @@ export class Vehicle {
   @OneToMany(() => Trip, (trip) => trip.vehicle)
   trips: Trip[];
 
-  @Column()
-  brand: string;
+  @Column({ nullable: true })
+  brand?: string;
 
-  @Column()
-  model: string;
+  @Column({ nullable: true })
+  model?: string;
 
   @Column({ nullable: true })
   plateNumber?: string;

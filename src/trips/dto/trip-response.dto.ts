@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { TripStatus } from '../../common/enums';
+import { Vehicle } from 'src/vehicles/vehicle.entity';
 
 export class CreatorDto {
   @ApiProperty({ nullable: true })
@@ -66,6 +67,9 @@ export class TripResponseDto {
 
   @ApiProperty({ nullable: true })
   vehicleModel?: string;
+
+  @ApiProperty({ nullable: true })
+  vehicle?: Vehicle;
 
   @ApiProperty()
   creator: CreatorDto;

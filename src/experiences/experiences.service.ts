@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Activity } from '../activity/activity.entity';
@@ -27,7 +31,10 @@ export class ExperiencesService {
   /**
    * Get all experiences for the feed
    */
-  async findAll(queryDto: GetExperiencesQueryDto): Promise<{
+  async findAll(
+    queryDto: GetExperiencesQueryDto,
+    userId?: string,
+  ): Promise<{
     data: ExperienceResponseDto[];
     total: number;
     page: number;
@@ -50,6 +57,7 @@ export class ExperiencesService {
       .leftJoinAndSelect('activity.participants', 'participants')
       .leftJoinAndSelect('activity.conversations', 'conversations')
       .leftJoinAndSelect('activity.requests', 'requests')
+      .leftJoinAndSelect('activity.likes', 'likes')
       .where('activity.status = :status', { status: 'published' });
 
     if (search) {
@@ -105,7 +113,9 @@ export class ExperiencesService {
 
     const [activities, total] = await queryBuilder.getManyAndCount();
 
-    const data = activities.map((activity) => this.mapToResponseDto(activity));
+    const data = activities.map((activity) =>
+      this.mapToResponseDto(activity, userId),
+    );
 
     return { data, total, page, limit };
   }
@@ -113,17 +123,23 @@ export class ExperiencesService {
   /**
    * Get a single experience by ID
    */
-  async findOne(id: string): Promise<ExperienceResponseDto> {
+  async findOne(id: string, userId?: string): Promise<ExperienceResponseDto> {
     const activity = await this.activityRepo.findOne({
       where: { id },
-      relations: ['promoter', 'participants', 'conversations', 'requests'],
+      relations: [
+        'promoter',
+        'participants',
+        'conversations',
+        'requests',
+        'likes',
+      ],
     });
 
     if (!activity) {
       throw new NotFoundException(`Experience with ID ${id} not found`);
     }
 
-    return this.mapToResponseDto(activity);
+    return this.mapToResponseDto(activity, userId);
   }
 
   /**
@@ -159,7 +175,7 @@ export class ExperiencesService {
       relations: ['promoter', 'participants', 'conversations', 'requests'],
     });
 
-    return this.mapToResponseDto(result!);
+    return this.mapToResponseDto(result!, userId);
   }
 
   /**
@@ -181,9 +197,7 @@ export class ExperiencesService {
 
     let isLiked = false;
     if (like) {
-      await this.likeRepo.remove(like);
-      activity.likesCount = Math.max(0, activity.likesCount - 1);
-      isLiked = false;
+      throw new ConflictException('Vous avez déjà liké cette expérience');
     } else {
       const newLike = this.likeRepo.create({
         activity: { id: activityId },
@@ -214,7 +228,10 @@ export class ExperiencesService {
   /**
    * Map Activity entity to ExperienceResponseDto
    */
-  private mapToResponseDto(activity: Activity): ExperienceResponseDto {
+  private mapToResponseDto(
+    activity: Activity,
+    userId?: string,
+  ): ExperienceResponseDto {
     const promoter = activity.promoter;
 
     // Build owner display name
@@ -237,6 +254,11 @@ export class ExperiencesService {
         (sum, conv) => sum + (conv.messages?.length || 0),
         0,
       ) || 0;
+    // Check if current user has liked
+    const hasLiked = userId
+      ? activity.likes?.some((like) => like.user?.id === userId) || false
+      : false;
+
     // For trips count, we would need to query trips associated with this activity
     // For now, return 0 as placeholder
     const trips = 0;
@@ -256,6 +278,7 @@ export class ExperiencesService {
         interests,
         comments,
         likes,
+        hasLiked,
         trips,
       },
     };
