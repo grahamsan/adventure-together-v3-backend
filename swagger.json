@@ -1007,14 +1007,14 @@
         ]
       }
     },
-    "/experiences/trips": {
+    "/experiences/{id}/trips": {
       "get": {
         "operationId": "ExperiencesController_getTripsByExperience",
         "parameters": [
           {
-            "name": "x-experience-id",
+            "name": "id",
             "required": true,
-            "in": "header",
+            "in": "path",
             "description": "ID of the experience",
             "schema": {
               "type": "string"
@@ -1034,16 +1034,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "Missing experience ID in header.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequestResponseDto"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -1051,7 +1041,7 @@
             "bearer": []
           }
         ],
-        "summary": "Get trips associated with an experience (ID in header)",
+        "summary": "Get trips associated with an experience",
         "tags": [
           "Experiences"
         ]

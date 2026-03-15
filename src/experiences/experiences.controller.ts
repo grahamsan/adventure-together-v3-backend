@@ -68,14 +68,14 @@ export class ExperiencesController {
     return this.experiencesService.findAll(query, req.user.id);
   }
 
-  @Get('trips')
+  @Get(':id/trips')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Get trips associated with an experience (ID in header)',
+    summary: 'Get trips associated with an experience',
   })
-  @ApiHeader({
-    name: 'x-experience-id',
+  @ApiParam({
+    name: 'id',
     description: 'ID of the experience',
     required: true,
   })
@@ -84,18 +84,10 @@ export class ExperiencesController {
     description: 'List of trips associated with the experience.',
     type: [TripResponseDto],
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Missing experience ID in header.',
-    type: BadRequestResponseDto,
-  })
   async getTripsByExperience(
     @Request() req,
-    @Headers('x-experience-id') experienceId: string,
+    @Param('id') experienceId: string,
   ): Promise<TripResponseDto[]> {
-    if (!experienceId) {
-      throw new BadRequestException('Missing x-experience-id header');
-    }
     return this.experiencesService.findTripsByExperience(
       experienceId,
       req.user.id,
