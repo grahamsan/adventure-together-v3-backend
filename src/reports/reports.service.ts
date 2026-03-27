@@ -1,10 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Report } from './report.entity';
 import { User } from '../users/entities/user.entity';
+import { Trip } from '../trips/trip.entity';
 import { CreateReportDto, UpdateReportStatusDto } from './dto/report.dto';
-import { ReportEntityType, ReportStatus } from '../common/enums';
+import {
+  ReportEntityType,
+  ReportStatus,
+  UserRole,
+} from '../common/enums';
 
 @Injectable()
 export class ReportsService {
@@ -13,11 +22,31 @@ export class ReportsService {
     private readonly reportRepo: Repository<Report>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Trip)
+    private readonly tripRepo: Repository<Trip>,
   ) {}
 
   async create(userId: string, dto: CreateReportDto): Promise<Report> {
     const reporter = await this.userRepo.findOneBy({ id: userId });
     if (!reporter) throw new NotFoundException('Reporter not found');
+
+    if (dto.entityType === ReportEntityType.TRIP) {
+      const trip = await this.tripRepo.findOne({
+        where: { id: dto.entityId },
+        relations: ['owner'],
+      });
+      if (!trip) throw new NotFoundException('Trajet introuvable');
+      if (reporter.role === UserRole.ADMIN) {
+        throw new ForbiddenException(
+          'Les administrateurs ne peuvent pas signaler un trajet.',
+        );
+      }
+      if (trip.owner?.id === userId) {
+        throw new ForbiddenException(
+          'Vous ne pouvez pas signaler votre propre trajet.',
+        );
+      }
+    }
 
     const report = this.reportRepo.create({
       reporter,

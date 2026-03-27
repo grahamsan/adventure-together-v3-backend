@@ -18,6 +18,7 @@ import { Request } from '../request/request.entity';
 import { CarpoolingInfo } from '../common/types';
 import { MeetingPoint } from '../common/types';
 import { Like } from '../likes/like.entity';
+import { Trip } from '../trips/trip.entity';
 
 @Entity('activities')
 export class Activity {
@@ -102,6 +103,9 @@ export class Activity {
   // requests
   @OneToMany(() => Request, (r) => r.activity)
   requests?: Request[];
+
+  @OneToMany(() => Trip, (trip) => trip.experience)
+  trips: Trip[];
 
   @Column({ default: 'published' })
   status: 'draft' | 'published' | 'cancelled';

@@ -5,8 +5,10 @@ import {
   IsDateString,
   IsOptional,
   IsEnum,
+  IsUUID,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { ActivityType } from '../../common/enums';
 
 export class CreateExperienceDto {
@@ -46,4 +48,16 @@ export class CreateExperienceDto {
   @IsOptional()
   @IsString()
   image?: string;
+
+  @ApiPropertyOptional({
+    description: 'ID du lieu à associer à cette expérience',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+    format: 'uuid',
+  })
+  @Transform(({ value }) =>
+    value === '' || value === null || value === undefined ? undefined : value,
+  )
+  @IsOptional()
+  @IsUUID()
+  placeId?: string;
 }

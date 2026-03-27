@@ -78,4 +78,12 @@ export class TripResponseDto {
     description: 'True if the current user has applied to this trip',
   })
   hasApplied: boolean;
+
+  @ApiProperty({ description: 'Driver / owner user id' })
+  ownerId: string;
+
+  @ApiProperty({
+    description: 'Number of applications (candidatures) for this trip',
+  })
+  applicationsCount: number;
 }

@@ -66,6 +66,10 @@ export class TripsService {
       .leftJoinAndSelect('applications.applicant', 'applicant')
       .where('trip.status = :status', { status: TripStatus.FILLING });
 
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    queryBuilder.andWhere('trip.startDate >= :startOfToday', { startOfToday });
+
     if (search) {
       queryBuilder.andWhere(
         '(LOWER(trip.from) LIKE :search OR LOWER(trip.to) LIKE :search OR LOWER(trip.description) LIKE :search)',
@@ -437,31 +441,88 @@ export class TripsService {
   async update(id: string, dto: Partial<CreateTripDto>, userId: string) {
     const trip = await this.tripRepo.findOne({
       where: { id },
-      relations: ['owner'],
+      relations: ['owner', 'experience', 'place', 'vehicle'],
     });
     if (!trip) throw new NotFoundException('Trip not found');
     if (trip.owner.id !== userId) throw new ForbiddenException('Accès refusé.');
 
-    Object.assign(trip, dto);
-    if (dto.startDate) trip.startDate = new Date(dto.startDate);
+    const applicationsCount = await this.applicationRepo.count({
+      where: { trip: { id } },
+    });
+    if (applicationsCount > 0) {
+      throw new ForbiddenException(
+        'Impossible de modifier le trajet : des candidatures existent déjà.',
+      );
+    }
 
-    const saved = await this.tripRepo.save(trip);
+    if (dto.from !== undefined) trip.from = dto.from;
+    if (dto.to !== undefined) trip.to = dto.to;
+    if (dto.startDate !== undefined) trip.startDate = new Date(dto.startDate);
+    if (dto.startHour !== undefined) trip.startHour = dto.startHour;
+    if (dto.tripDescription !== undefined) trip.description = dto.tripDescription;
+    if (dto.price !== undefined) trip.price = dto.price;
+    if (dto.seatsAvailable !== undefined) trip.seatsAvailable = dto.seatsAvailable;
+    if (dto.escales !== undefined) trip.escales = dto.escales;
 
-    // Notify trip members of the update
+    if (dto.experienceId !== undefined) {
+      if (!dto.experienceId) {
+        trip.experience = undefined;
+      } else {
+        const exp = await this.activityRepo.findOneBy({ id: dto.experienceId });
+        trip.experience = exp ?? undefined;
+      }
+    }
+
+    if (dto.placeId !== undefined) {
+      if (!dto.placeId) {
+        trip.place = undefined;
+      } else {
+        const place = await this.placeRepo.findOneBy({ id: dto.placeId });
+        trip.place = place ?? undefined;
+      }
+    }
+
+    if (dto.associatedVehicle !== undefined) {
+      if (!dto.associatedVehicle) {
+        trip.vehicle = undefined;
+      } else {
+        const vehicle = await this.vehicleRepo.findOneBy({
+          id: dto.associatedVehicle,
+        });
+        trip.vehicle = vehicle ?? undefined;
+      }
+    }
+
+    await this.tripRepo.save(trip);
+
     const fullTrip = await this.tripRepo.findOne({
       where: { id },
-      relations: ['owner'],
+      relations: [
+        'owner',
+        'experience',
+        'place',
+        'vehicle',
+        'applications',
+        'applications.applicant',
+      ],
     });
     if (fullTrip) {
       await this.notificationsService.notifyTripMembersOfUpdate(fullTrip);
     }
 
-    if (saved.owner) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { passwordHash, ...owner } = saved.owner;
-      saved.owner = owner as User;
-    }
-    return saved;
+    const reloaded = await this.tripRepo.findOne({
+      where: { id },
+      relations: [
+        'owner',
+        'experience',
+        'place',
+        'vehicle',
+        'applications',
+        'applications.applicant',
+      ],
+    });
+    if (!reloaded) throw new NotFoundException('Trip not found');
+    return this.mapToResponseDto(reloaded, userId);
   }
 
   async remove(id: string, userId: string) {
@@ -471,6 +532,15 @@ export class TripsService {
     });
     if (!trip) throw new NotFoundException('Trip not found');
     if (trip.owner.id !== userId) throw new ForbiddenException('Accès refusé.');
+
+    const applicationsCount = await this.applicationRepo.count({
+      where: { trip: { id } },
+    });
+    if (applicationsCount > 0) {
+      throw new ForbiddenException(
+        'Impossible de supprimer le trajet : des candidatures existent déjà.',
+      );
+    }
 
     await this.tripRepo.remove(trip);
   }
@@ -523,6 +593,8 @@ export class TripsService {
       relatedExpName: trip.experience?.title || '',
       relatedPlaceName: trip.place?.title || '',
       hasApplied,
+      ownerId: trip.owner?.id ?? '',
+      applicationsCount: trip.applications?.length ?? 0,
       driverName: trip.owner
         ? `${trip.owner.firstName} ${trip.owner.lastName}`.trim()
         : '',

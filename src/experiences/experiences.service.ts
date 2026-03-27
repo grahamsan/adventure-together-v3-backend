@@ -2,13 +2,17 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Activity } from '../activity/activity.entity';
 import { User } from '../users/entities/user.entity';
 import { Like } from '../likes/like.entity';
+import { Place } from '../places/place.entity';
+import { Trip } from '../trips/trip.entity';
 import { CreateExperienceDto } from './dto/create-experience.dto';
+import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { GetExperiencesQueryDto } from './dto/get-experiences-query.dto';
 import { ExperienceResponseDto } from './dto/experience-response.dto';
 import { ActivityType } from '../common/enums';
@@ -25,6 +29,10 @@ export class ExperiencesService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Like)
     private readonly likeRepo: Repository<Like>,
+    @InjectRepository(Place)
+    private readonly placeRepo: Repository<Place>,
+    @InjectRepository(Trip)
+    private readonly tripRepo: Repository<Trip>,
     private readonly tripsService: TripsService,
   ) {}
 
@@ -56,9 +64,18 @@ export class ExperiencesService {
       .leftJoinAndSelect('activity.promoter', 'promoter')
       .leftJoinAndSelect('activity.participants', 'participants')
       .leftJoinAndSelect('activity.conversations', 'conversations')
+      .leftJoinAndSelect('conversations.messages', 'messages')
       .leftJoinAndSelect('activity.requests', 'requests')
       .leftJoinAndSelect('activity.likes', 'likes')
+      .leftJoinAndSelect('likes.user', 'likeUser')
       .where('activity.status = :status', { status: 'published' });
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    queryBuilder.andWhere(
+      'COALESCE(activity.startDate, activity.date) >= :startOfToday',
+      { startOfToday },
+    );
 
     if (search) {
       queryBuilder.andWhere('LOWER(activity.title) LIKE :search', {
@@ -113,6 +130,8 @@ export class ExperiencesService {
 
     const [activities, total] = await queryBuilder.getManyAndCount();
 
+    await this.attachTripsCounts(activities);
+
     const data = activities.map((activity) =>
       this.mapToResponseDto(activity, userId),
     );
@@ -130,10 +149,19 @@ export class ExperiencesService {
         'promoter',
         'participants',
         'conversations',
+        'conversations.messages',
         'requests',
         'likes',
+        'likes.user',
       ],
     });
+
+    if (activity) {
+      const tripsCount = await this.tripRepo.count({
+        where: { experience: { id } },
+      });
+      (activity as any).tripsCount = tripsCount;
+    }
 
     if (!activity) {
       throw new NotFoundException(`Experience with ID ${id} not found`);
@@ -154,6 +182,15 @@ export class ExperiencesService {
       throw new NotFoundException('User not found');
     }
 
+    let associatedPlaces: Place[] | undefined;
+    if (dto.placeId) {
+      const place = await this.placeRepo.findOneBy({ id: dto.placeId });
+      if (!place) {
+        throw new NotFoundException('Lieu introuvable');
+      }
+      associatedPlaces = [place];
+    }
+
     const activity = this.activityRepo.create({
       title: dto.title,
       description: dto.description,
@@ -166,16 +203,113 @@ export class ExperiencesService {
       promoter: user,
       status: 'published',
     });
+    if (associatedPlaces?.length) {
+      activity.associatedPlaces = associatedPlaces;
+    }
 
     const saved = await this.activityRepo.save(activity);
 
     // Reload with relations
     const result = await this.activityRepo.findOne({
       where: { id: saved.id },
-      relations: ['promoter', 'participants', 'conversations', 'requests'],
+      relations: [
+        'promoter',
+        'participants',
+        'conversations',
+        'conversations.messages',
+        'requests',
+        'likes',
+        'likes.user',
+      ],
     });
 
     return this.mapToResponseDto(result!, userId);
+  }
+
+  async update(
+    id: string,
+    dto: UpdateExperienceDto,
+    userId: string,
+  ): Promise<ExperienceResponseDto> {
+    const activity = await this.activityRepo.findOne({
+      where: { id },
+      relations: ['promoter', 'associatedPlaces'],
+    });
+    if (!activity) {
+      throw new NotFoundException(`Experience with ID ${id} not found`);
+    }
+    if (activity.promoter.id !== userId) {
+      throw new ForbiddenException(
+        'Seul le promoteur peut modifier cette expérience.',
+      );
+    }
+
+    if (dto.title !== undefined) activity.title = dto.title;
+    if (dto.description !== undefined) activity.description = dto.description;
+    if (dto.location !== undefined) activity.location = dto.location;
+    if (dto.type !== undefined) activity.type = dto.type;
+    if (dto.image !== undefined) activity.image = dto.image;
+    if (dto.dateStart !== undefined) {
+      activity.startDate = new Date(dto.dateStart);
+      activity.date = new Date(dto.dateStart);
+    }
+    if (dto.dateEnd !== undefined) {
+      activity.endDate = new Date(dto.dateEnd);
+    }
+    if (dto.placeId !== undefined) {
+      if (!dto.placeId) {
+        activity.associatedPlaces = [];
+      } else {
+        const place = await this.placeRepo.findOneBy({ id: dto.placeId });
+        if (!place) {
+          throw new NotFoundException('Lieu introuvable');
+        }
+        activity.associatedPlaces = [place];
+      }
+    }
+
+    await this.activityRepo.save(activity);
+
+    const result = await this.activityRepo.findOne({
+      where: { id: activity.id },
+      relations: [
+        'promoter',
+        'participants',
+        'conversations',
+        'conversations.messages',
+        'requests',
+        'likes',
+        'likes.user',
+      ],
+    });
+    return this.mapToResponseDto(result!, userId);
+  }
+
+  async remove(id: string, userId: string): Promise<void> {
+    const activity = await this.activityRepo.findOne({
+      where: { id },
+      relations: ['promoter'],
+    });
+    if (!activity) {
+      throw new NotFoundException(`Experience with ID ${id} not found`);
+    }
+    if (activity.promoter.id !== userId) {
+      throw new ForbiddenException(
+        'Seul le promoteur peut supprimer cette expérience.',
+      );
+    }
+
+    const linkedTrips = await this.tripRepo.find({
+      where: { experience: { id } },
+    });
+    for (const t of linkedTrips) {
+      t.experience = undefined;
+    }
+    if (linkedTrips.length) {
+      await this.tripRepo.save(linkedTrips);
+    }
+
+    await this.activityRepo.remove(activity);
   }
 
   /**
@@ -226,6 +360,36 @@ export class ExperiencesService {
   }
 
   /**
+   * Nombre de trajets liés par expérience (évite loadRelationCountAndMap qui est
+   * peu fiable avec de nombreux leftJoinAndSelect sur la même requête).
+   */
+  private async attachTripsCounts(activities: Activity[]): Promise<void> {
+    if (activities.length === 0) return;
+    const ids = activities.map((a) => a.id);
+    const rows = await this.tripRepo
+      .createQueryBuilder('trip')
+      .select('trip.experienceId', 'eid')
+      .addSelect('COUNT(trip.id)', 'cnt')
+      .where('trip.experienceId IN (:...ids)', { ids })
+      .groupBy('trip.experienceId')
+      .getRawMany();
+
+    const countByExperience = new Map<string, number>();
+    for (const row of rows) {
+      const r = row as Record<string, string>;
+      const eid = r.eid ?? r.experienceId;
+      const cnt = r.cnt ?? r.count;
+      if (eid != null && cnt != null) {
+        countByExperience.set(String(eid), Number(cnt));
+      }
+    }
+    for (const activity of activities) {
+      (activity as Activity & { tripsCount?: number }).tripsCount =
+        countByExperience.get(activity.id) ?? 0;
+    }
+  }
+
+  /**
    * Map Activity entity to ExperienceResponseDto
    */
   private mapToResponseDto(
@@ -248,7 +412,7 @@ export class ExperiencesService {
 
     // Calculate stats
     const interests = activity.requests?.length || 0;
-    const likes = activity.likesCount || 0;
+    const likes = activity.likes?.length ?? activity.likesCount ?? 0;
     const comments =
       activity.conversations?.reduce(
         (sum, conv) => sum + (conv.messages?.length || 0),
@@ -259,10 +423,7 @@ export class ExperiencesService {
       ? activity.likes?.some((like) => like.user?.id === userId) || false
       : false;
 
-    // For trips count, we would need to query trips associated with this activity
-    // For now, return 0 as placeholder
-    const trips = 0;
-
+    const trips = (activity as any).tripsCount ?? 0;
     return {
       id: activity.id,
       title: activity.title,

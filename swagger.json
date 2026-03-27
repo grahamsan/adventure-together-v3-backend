@@ -1092,6 +1092,79 @@
         "tags": [
           "Experiences"
         ]
+      },
+      "patch": {
+        "operationId": "ExperiencesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Experience ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExperienceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Experience updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an experience (promoter only)",
+        "tags": [
+          "Experiences"
+        ]
+      },
+      "delete": {
+        "operationId": "ExperiencesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Experience ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Experience deleted."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an experience (promoter only)",
+        "tags": [
+          "Experiences"
+        ]
       }
     },
     "/experiences/{id}/like": {
@@ -4338,6 +4411,14 @@
           "hasApplied": {
             "type": "boolean",
             "description": "True if the current user has applied to this trip"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Driver / owner user id"
+          },
+          "applicationsCount": {
+            "type": "number",
+            "description": "Number of applications (candidatures) for this trip"
           }
         },
         "required": [
@@ -4358,7 +4439,9 @@
           "vehicleModel",
           "vehicle",
           "creator",
-          "hasApplied"
+          "hasApplied",
+          "ownerId",
+          "applicationsCount"
         ]
       },
       "CreateExperienceDto": {
@@ -4398,6 +4481,12 @@
           "image": {
             "type": "string",
             "example": "https://example.com/image.jpg"
+          },
+          "placeId": {
+            "type": "string",
+            "description": "ID du lieu à associer à cette expérience",
+            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "format": "uuid"
           }
         },
         "required": [
@@ -4407,6 +4496,52 @@
           "dateStart",
           "dateEnd"
         ]
+      },
+      "UpdateExperienceDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Beach Party Cotonou",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "example": "An amazing beach party experience",
+            "minLength": 2
+          },
+          "location": {
+            "type": "string",
+            "example": "Cotonou, Benin",
+            "minLength": 2
+          },
+          "dateStart": {
+            "type": "string",
+            "example": "2026-02-01T10:00:00Z"
+          },
+          "dateEnd": {
+            "type": "string",
+            "example": "2026-02-02T18:00:00Z"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "road-trip",
+              "event"
+            ],
+            "default": "event"
+          },
+          "image": {
+            "type": "string",
+            "example": "https://example.com/image.jpg"
+          },
+          "placeId": {
+            "type": "string",
+            "description": "ID du lieu à associer à cette expérience",
+            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "format": "uuid"
+          }
+        }
       },
       "CreateTripDto": {
         "type": "object",

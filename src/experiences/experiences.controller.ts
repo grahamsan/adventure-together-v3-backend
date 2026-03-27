@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   UseGuards,
   Request,
@@ -33,6 +35,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../common/enums';
 import { ExperiencesService } from './experiences.service';
 import { CreateExperienceDto } from './dto/create-experience.dto';
+import { UpdateExperienceDto } from './dto/update-experience.dto';
 import {
   ExperienceResponseDto,
   ExperienceFeedResponseDto,
@@ -146,6 +149,39 @@ export class ExperiencesController {
     @Body() createExperienceDto: CreateExperienceDto,
   ): Promise<ExperienceResponseDto> {
     return this.experiencesService.create(createExperienceDto, req.user.id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ORGANIZER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update an experience (promoter only)' })
+  @ApiParam({ name: 'id', description: 'Experience ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Experience updated.',
+    type: ExperienceResponseDto,
+  })
+  async update(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() dto: UpdateExperienceDto,
+  ): Promise<ExperienceResponseDto> {
+    return this.experiencesService.update(id, dto, req.user.id);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ORGANIZER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete an experience (promoter only)' })
+  @ApiParam({ name: 'id', description: 'Experience ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Experience deleted.',
+  })
+  async remove(@Param('id') id: string, @Request() req): Promise<void> {
+    return this.experiencesService.remove(id, req.user.id);
   }
 
   @Post(':id/like')
