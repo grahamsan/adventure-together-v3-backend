@@ -38,6 +38,15 @@ export const AppDataSource = new DataSource({
   username: process.env.DATABASE_USERNAME || 'postgres',
   password: process.env.DATABASE_PASSWORD || '',
   database: process.env.DATABASE_NAME || 'your_database',
+  // Aligné sur AppModule : Neon et la plupart des hébergeurs exigent TLS.
+  ssl:
+    process.env.DATABASE_SSL === 'false'
+      ? false
+      : { rejectUnauthorized: false },
+  // Évite les échecs ENETUNREACH quand la route IPv6 locale est absente.
+  extra: {
+    family: 4,
+  },
   entities: [
     User,
     Trip,

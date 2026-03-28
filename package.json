@@ -21,7 +21,8 @@
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "pnpm run typeorm migration:generate -d ormconfig.ts",
     "migration:run": "pnpm run typeorm migration:run -d ormconfig.ts",
-    "migration:revert": "pnpm run typeorm migration:revert -d ormconfig.ts"
+    "migration:revert": "pnpm run typeorm migration:revert -d ormconfig.ts",
+    "seed:admin": "ts-node -r dotenv/config src/scripts/seed-admin.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
