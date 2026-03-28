@@ -6,6 +6,8 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
+  RelationId,
 } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { TripActivity } from '../trip-activity/trip-activity.entity';
@@ -26,7 +28,12 @@ export class Trip {
     nullable: false,
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'ownerId' })
   owner: User;
+
+  /** Toujours renseigné (FK), même si `owner` n’est pas joint en requête */
+  @RelationId((trip: Trip) => trip.owner)
+  ownerId: string;
 
   @Column()
   from: string;

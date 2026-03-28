@@ -360,6 +360,40 @@ export class ExperiencesService {
   }
 
   /**
+   * Expériences (activités publiées) associées à un lieu (many-to-many activity_places).
+   */
+  async findByPlaceId(
+    placeId: string,
+    userId?: string,
+  ): Promise<ExperienceResponseDto[]> {
+    const place = await this.placeRepo.findOneBy({ id: placeId });
+    if (!place) {
+      throw new NotFoundException(`Lieu avec l'id ${placeId} non trouvé`);
+    }
+
+    const activities = await this.activityRepo
+      .createQueryBuilder('activity')
+      .leftJoinAndSelect('activity.promoter', 'promoter')
+      .leftJoinAndSelect('activity.participants', 'participants')
+      .leftJoinAndSelect('activity.conversations', 'conversations')
+      .leftJoinAndSelect('conversations.messages', 'messages')
+      .leftJoinAndSelect('activity.requests', 'requests')
+      .leftJoinAndSelect('activity.likes', 'likes')
+      .leftJoinAndSelect('likes.user', 'likeUser')
+      .leftJoin('activity.associatedPlaces', 'place')
+      .where('place.id = :placeId', { placeId })
+      .andWhere('activity.status = :status', { status: 'published' })
+      .orderBy('activity.createdAt', 'DESC')
+      .getMany();
+
+    await this.attachTripsCounts(activities);
+
+    return activities.map((activity) =>
+      this.mapToResponseDto(activity, userId),
+    );
+  }
+
+  /**
    * Nombre de trajets liés par expérience (évite loadRelationCountAndMap qui est
    * peu fiable avec de nombreux leftJoinAndSelect sur la même requête).
    */
@@ -432,6 +466,7 @@ export class ExperiencesService {
       date: (activity.date || activity.startDate)?.toISOString() || '',
       image: activity.image || '',
       owner: {
+        id: promoter?.id ?? '',
         fullName,
         avatarUrl: promoter?.avatarUrl || null,
       },

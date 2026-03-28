@@ -22,22 +22,26 @@ export class NotificationsController {
   @Get()
   @ApiOperation({ summary: 'Get paginated notifications for the current user' })
   findAll(@Req() req, @Query() query: PaginationQueryDto) {
+    const userId = req.user?.id ?? req.user?.sub;
     return this.notificationsService.findAllForUser(
-      req.user.sub,
+      userId,
       query.page,
       query.limit,
     );
   }
 
-  @Patch(':id/read')
-  @ApiOperation({ summary: 'Mark a notification as read' })
-  markAsRead(@Req() req, @Param('id') id: string) {
-    return this.notificationsService.markAsRead(id, req.user.sub);
-  }
-
+  /** Déclaré avant :id/read pour éviter toute ambiguïté de routage */
   @Patch('read-all')
   @ApiOperation({ summary: 'Mark all notifications as read' })
   markAllAsRead(@Req() req) {
-    return this.notificationsService.markAllAsRead(req.user.sub);
+    const userId = req.user?.id ?? req.user?.sub;
+    return this.notificationsService.markAllAsRead(userId);
+  }
+
+  @Patch(':id/read')
+  @ApiOperation({ summary: 'Mark a notification as read' })
+  markAsRead(@Req() req, @Param('id') id: string) {
+    const userId = req.user?.id ?? req.user?.sub;
+    return this.notificationsService.markAsRead(id, userId);
   }
 }

@@ -144,6 +144,47 @@ export class TripsService {
     return trips.map((trip) => this.mapToResponseDto(trip, userId));
   }
 
+  /**
+   * Trajets dont l’utilisateur est le conducteur (tous statuts), avec isPassed.
+   */
+  async findMine(userId: string): Promise<TripResponseDto[]> {
+    const trips = await this.tripRepo.find({
+      where: { owner: { id: userId } },
+      relations: [
+        'owner',
+        'experience',
+        'place',
+        'vehicle',
+        'applications',
+        'applications.applicant',
+      ],
+      order: { startDate: 'DESC' },
+    });
+
+    return trips.map((trip) => {
+      const dto = this.mapToResponseDto(trip, userId);
+      return {
+        ...dto,
+        isPassed: this.isTripDeparturePassed(trip),
+      };
+    });
+  }
+
+  /** Date du jour + heure startHour comparées à maintenant. */
+  private isTripDeparturePassed(trip: Trip): boolean {
+    return this.combineTripStartDateTime(trip).getTime() < Date.now();
+  }
+
+  private combineTripStartDateTime(trip: Trip): Date {
+    const d = new Date(trip.startDate);
+    const hour = trip.startHour || '00:00';
+    const parts = hour.split(':');
+    const h = parseInt(parts[0] ?? '0', 10);
+    const min = parseInt(parts[1] ?? '0', 10);
+    d.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(min) ? min : 0, 0, 0);
+    return d;
+  }
+
   async findOne(id: string, userId?: string): Promise<TripResponseDto> {
     const trip = await this.tripRepo.findOne({
       where: { id },
@@ -545,6 +586,28 @@ export class TripsService {
     await this.tripRepo.remove(trip);
   }
 
+  /**
+   * Accusé de réception par un candidat (y compris refusé) : « voyage effectué » vu.
+   */
+  async acknowledgeTripCompletion(
+    tripId: string,
+    userId: string,
+  ): Promise<{ ok: boolean }> {
+    const application = await this.applicationRepo.findOne({
+      where: { trip: { id: tripId }, applicant: { id: userId } },
+    });
+    if (!application) {
+      throw new NotFoundException(
+        'Aucune candidature trouvée pour ce trajet.',
+      );
+    }
+    if (!application.acknowledgedTripDoneAt) {
+      application.acknowledgedTripDoneAt = new Date();
+      await this.applicationRepo.save(application);
+    }
+    return { ok: true };
+  }
+
   async updateStatus(id: string, status: TripStatus, userId: string) {
     const trip = await this.tripRepo.findOne({
       where: { id },
@@ -565,6 +628,18 @@ export class TripsService {
 
     trip.status = status;
     const saved = await this.tripRepo.save(trip);
+
+    const fullTrip = await this.tripRepo.findOne({
+      where: { id: saved.id },
+      relations: ['owner', 'applications', 'applications.applicant'],
+    });
+    if (fullTrip) {
+      await this.notificationsService.notifyApplicantsOfTripStatusChange(
+        fullTrip,
+        status,
+      );
+    }
+
     if (saved.owner) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...owner } = saved.owner;
@@ -593,7 +668,7 @@ export class TripsService {
       relatedExpName: trip.experience?.title || '',
       relatedPlaceName: trip.place?.title || '',
       hasApplied,
-      ownerId: trip.owner?.id ?? '',
+      ownerId: trip.owner?.id ?? trip.ownerId ?? '',
       applicationsCount: trip.applications?.length ?? 0,
       driverName: trip.owner
         ? `${trip.owner.firstName} ${trip.owner.lastName}`.trim()

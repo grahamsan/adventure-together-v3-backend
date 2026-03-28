@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Request,
   UseGuards,
   ParseUUIDPipe,
   HttpStatus,
@@ -28,6 +29,8 @@ import {
   SuccessResponseDto,
 } from '../common/dto/api-responses.dto';
 import { PlacesService } from './places.service';
+import { ExperiencesService } from '../experiences/experiences.service';
+import { ExperienceResponseDto } from '../experiences/dto/experience-response.dto';
 import { CreatePlaceDto } from './dto/create-place.dto';
 import { UpdatePlaceDto } from './dto/update-place.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -41,7 +44,10 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('places')
 export class PlacesController {
-  constructor(private readonly placesService: PlacesService) {}
+  constructor(
+    private readonly placesService: PlacesService,
+    private readonly experiencesService: ExperiencesService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Créer un nouveau lieu' })
@@ -98,6 +104,25 @@ export class PlacesController {
   })
   getFavorites(@GetUser('id') userId: string) {
     return this.placesService.getFavorites(userId);
+  }
+
+  @Get(':id/experiences')
+  @ApiOperation({
+    summary: 'Expériences liées à un lieu',
+    description:
+      'Liste des expériences publiées dont le lieu est associé (road-trip / lieu plateforme).',
+  })
+  @ApiParam({ name: 'id', description: 'ID du lieu' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Liste des expériences.',
+    type: [ExperienceResponseDto],
+  })
+  findExperiencesByPlace(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: { id: string } },
+  ): Promise<ExperienceResponseDto[]> {
+    return this.experiencesService.findByPlaceId(id, req.user?.id);
   }
 
   @Get(':id')

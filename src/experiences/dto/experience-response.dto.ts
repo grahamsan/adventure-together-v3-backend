@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ExperienceOwnerDto {
+  @ApiProperty({ description: 'ID du promoteur / créateur' })
+  id: string;
+
   @ApiProperty()
   fullName: string;
 

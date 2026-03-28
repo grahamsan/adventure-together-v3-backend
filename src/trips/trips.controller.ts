@@ -60,6 +60,27 @@ export class TripsController {
     return this.tripsService.findAll(query, req.user?.id);
   }
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Trajets créés par l’utilisateur connecté (conducteur)',
+    description:
+      'Inclut `isPassed` : true lorsque la date et l’heure de départ sont déjà passées.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Liste des trajets du conducteur.',
+    type: [TripResponseDto],
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    type: UnauthorizedResponseDto,
+  })
+  findMine(@Request() req) {
+    return this.tripsService.findMine(req.user.id);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.DRIVER)
@@ -115,6 +136,24 @@ export class TripsController {
     @Body() applyDto: ApplyToTripDto,
   ) {
     return this.tripsService.apply(id, applyDto, req.user.id);
+  }
+
+  @Post(':id/ack-completion')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Accuser réception du voyage marqué comme effectué',
+    description:
+      'Réservé aux utilisateurs ayant une candidature sur ce trajet (tout statut).',
+  })
+  @ApiParam({ name: 'id', description: 'Trip ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Accusé enregistré.' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    type: NotFoundResponseDto,
+  })
+  acknowledgeTripCompletion(@Request() req, @Param('id') id: string) {
+    return this.tripsService.acknowledgeTripCompletion(id, req.user.id);
   }
 
   @Get(':id')

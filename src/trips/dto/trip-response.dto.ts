@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TripStatus } from '../../common/enums';
 import { Vehicle } from 'src/vehicles/vehicle.entity';
 
@@ -86,4 +86,10 @@ export class TripResponseDto {
     description: 'Number of applications (candidatures) for this trip',
   })
   applicationsCount: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Présent sur GET /trips/me : true si la date/heure de départ du trajet est passée',
+  })
+  isPassed?: boolean;
 }

@@ -46,6 +46,7 @@ export class ConversationsService {
       .leftJoinAndSelect('conversation.associatedUsers', 'user')
       .leftJoinAndSelect('conversation.activity', 'activity')
       .leftJoinAndSelect('conversation.trip', 'trip')
+      .leftJoinAndSelect('trip.applications', 'tripApplications')
       .leftJoinAndSelect('conversation.tripApplication', 'tripApplication')
       .leftJoinAndSelect('conversation.messages', 'message')
       .leftJoinAndSelect('message.sender', 'sender')
@@ -53,7 +54,11 @@ export class ConversationsService {
       .orderBy('message.timestamp', 'DESC')
       .getMany();
 
-    return fullConversations.map((c) => {
+    const visible = fullConversations.filter(
+      (c) => !this.shouldHideTripConversationAfterDone(c),
+    );
+
+    return visible.map((c) => {
       const unreadCount =
         c.messages?.filter((m) => !m.readByUserIds?.includes(userId)).length ||
         0;
@@ -90,6 +95,19 @@ export class ConversationsService {
           : null, // Retourne le nom complet si disponible [cite: 49, 50]
       };
     });
+  }
+
+  /**
+   * Exclure du fil d’accueil les conversations de trajet marquées DONE
+   * lorsque toutes les candidatures ont un accusé « voyage effectué »
+   * (ou qu’il n’y a aucune candidature).
+   */
+  private shouldHideTripConversationAfterDone(c: Conversation): boolean {
+    const trip = c.trip;
+    if (!trip || trip.status !== TripStatus.DONE) return false;
+    const apps = trip.applications ?? [];
+    if (apps.length === 0) return true;
+    return apps.every((a) => a.acknowledgedTripDoneAt != null);
   }
 
   async findOne(id: string, userId: string) {

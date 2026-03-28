@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -72,10 +76,18 @@ export class NotificationsService {
   }
 
   async markAllAsRead(userId: string): Promise<void> {
-    await this.notificationRepo.update(
-      { recipient: { id: userId }, isRead: false },
-      { isRead: true },
-    );
+    if (!userId) {
+      throw new UnauthorizedException('Utilisateur non identifié');
+    }
+    // Repository.update() ne gère pas correctement les filtres sur relation imbriquée
+    // ({ recipient: { id } }) → erreur SQL / 500 selon TypeORM / driver.
+    await this.notificationRepo
+      .createQueryBuilder()
+      .update(Notification)
+      .set({ isRead: true })
+      .where('recipientId = :userId', { userId })
+      .andWhere('isRead = :isRead', { isRead: false })
+      .execute();
   }
 
   // ─── Notification Creators ─────────────────────────────────────────
@@ -130,6 +142,99 @@ export class NotificationsService {
       },
       meta: { tripId: trip.id, accepted },
     });
+  }
+
+  /**
+   * Notifie les personnes ayant postulé quand le conducteur change le statut du trajet
+   * (PATCH /trips/:id/status). Pour DONE : message dédié + candidats refusés inclus ;
+   * pour les autres statuts : message générique, refusés exclus.
+   */
+  async notifyApplicantsOfTripStatusChange(
+    trip: Trip,
+    newStatus: TripStatus,
+  ): Promise<void> {
+    const applications = await this.applicationRepo.find({
+      where: { trip: { id: trip.id } },
+      relations: ['applicant'],
+    });
+
+    if (newStatus === TripStatus.DONE) {
+      await this.notifyTripMarkedDone(trip, applications);
+      return;
+    }
+
+    const statusLabels: Partial<Record<TripStatus, string>> = {
+      [TripStatus.FILLING]: 'ouvert aux candidatures',
+      [TripStatus.INCOMING]: 'en cours (confirmé)',
+    };
+
+    const label = statusLabels[newStatus] ?? 'mis à jour';
+    const title = 'Statut du trajet mis à jour';
+    const description = `Le trajet ${trip.from} → ${trip.to} est maintenant : ${label}.`;
+
+    for (const app of applications) {
+      if (!app.applicant || app.applicant.id === trip.owner?.id) continue;
+      if (app.status === RequestStatus.REJECTED) continue;
+
+      await this.createAndSend({
+        recipient: app.applicant,
+        title,
+        description,
+        type: NotificationType.TRIP,
+        priority: NotificationPriority.NORMAL,
+        action: {
+          targetRoute: '/trips/:id',
+          params: { tripId: trip.id },
+        },
+        meta: { tripId: trip.id, tripStatus: newStatus },
+      });
+    }
+  }
+
+  private async notifyTripMarkedDone(
+    trip: Trip,
+    applications: TripApplication[],
+  ): Promise<void> {
+    const owner = trip.owner;
+    const creatorName = owner
+      ? `${owner.firstName ?? ''} ${owner.lastName ?? ''}`.trim() ||
+        owner.name ||
+        'Le conducteur'
+      : 'Le conducteur';
+
+    const tripDateStr = trip.startDate
+      ? trip.startDate.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : '';
+
+    const title = 'Voyage marqué comme effectué';
+    const description = `${creatorName}, créateur du trajet ${trip.from} → ${trip.to} du ${tripDateStr}, a marqué le voyage comme effectué.`;
+
+    for (const app of applications) {
+      if (!app.applicant || app.applicant.id === trip.owner?.id) continue;
+
+      await this.createAndSend({
+        recipient: app.applicant,
+        title,
+        description,
+        type: NotificationType.TRIP,
+        priority: NotificationPriority.HIGH,
+        action: {
+          targetRoute: '/trips/:id',
+          params: { tripId: trip.id },
+        },
+        meta: {
+          kind: 'trip_marked_done',
+          tripId: trip.id,
+          ownerId: trip.owner?.id,
+          tripStatus: TripStatus.DONE,
+        },
+      });
+    }
   }
 
   /**

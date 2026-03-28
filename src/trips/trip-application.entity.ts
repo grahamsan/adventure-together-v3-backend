@@ -31,4 +31,8 @@ export class TripApplication {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  /** Accusé de réception « voyage effectué » (POST /trips/:id/ack-completion) */
+  @Column({ type: 'timestamp', nullable: true })
+  acknowledgedTripDoneAt?: Date | null;
 }
