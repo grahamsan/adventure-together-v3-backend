@@ -38,6 +38,29 @@ export class TripsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
+  /**
+   * Premier message posté dans la conversation par le postulant (motivation + nombre de places).
+   */
+  private buildApplicationIntroMessage(
+    trip: Trip,
+    requestedSeats: number,
+    rawMessage?: string,
+  ): string {
+    const motivation = rawMessage?.trim();
+    const dateLabel = trip.startDate.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const intro =
+      motivation && motivation.length > 0
+        ? motivation
+        : `J'aimerais participer au voyage « ${trip.from} » → « ${trip.to} » du ${dateLabel}.`;
+    const placeWord = requestedSeats > 1 ? 'places' : 'place';
+    return `${intro} J'aimerais avoir ${requestedSeats} ${placeWord}.`;
+  }
+
   async findAll(
     queryDto: GetTripsQueryDto,
     userId?: string,
@@ -313,7 +336,7 @@ export class TripsService {
     });
 
     if (existing) {
-      existing.message = dto.message;
+      existing.message = dto.message ?? '';
       existing.requestedSeats = dto.requestedSeats;
       const saved = await this.applicationRepo.save(existing);
       if (saved.applicant) {
@@ -327,12 +350,18 @@ export class TripsService {
     const application = this.applicationRepo.create({
       trip,
       applicant: user,
-      message: dto.message,
+      message: dto.message ?? '',
       requestedSeats: dto.requestedSeats,
       status: RequestStatus.PENDING,
     });
 
     const saved = await this.applicationRepo.save(application);
+
+    const initialMessageText = this.buildApplicationIntroMessage(
+      trip,
+      dto.requestedSeats,
+      dto.message,
+    );
 
     // Automated Messaging: Create private conversation between applicant and driver
     await this.conversationsService.createApplicationPrivateConversation(
@@ -340,6 +369,7 @@ export class TripsService {
       user,
       trip.owner,
       saved,
+      initialMessageText,
     );
 
     // Notify the driver of the new application
@@ -366,7 +396,7 @@ export class TripsService {
       );
     }
 
-    application.message = dto.message;
+    application.message = dto.message ?? '';
     application.requestedSeats = dto.requestedSeats;
     const saved = await this.applicationRepo.save(application);
     if (saved.applicant) {

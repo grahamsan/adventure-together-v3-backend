@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Comment } from './comment.entity';
 import {
   CommentInteraction,
@@ -47,8 +47,9 @@ export class CommentsService {
   }
 
   async findAll(experienceId: string) {
+    /** Uniquement les racines : les réponses ont `parent` défini et sont déjà dans `replies`. */
     const comments = await this.commentRepo.find({
-      where: { activity: { id: experienceId } },
+      where: { activity: { id: experienceId }, parent: IsNull() },
       relations: ['user', 'replies', 'replies.user'],
       order: { createdAt: 'DESC' },
     });

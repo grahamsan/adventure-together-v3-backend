@@ -1,11 +1,12 @@
-import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsString, IsNumber, Min, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ApplyToTripDto {
-  @ApiProperty({ example: 'I would like to join this trip.' })
+  /** Motivation libre ; si vide, un texte par défaut est généré côté serveur dans le 1er message de conversation. */
+  @ApiProperty({ required: false, example: 'Je serais ravi de participer.' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  message: string;
+  message?: string;
 
   @ApiProperty({ example: 1 })
   @IsNumber()

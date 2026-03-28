@@ -184,6 +184,8 @@ export class ConversationsService {
     applicant: User,
     driver: User,
     application: TripApplication,
+    /** Premier message affiché dans le fil (postulant → conducteur). */
+    initialMessageText: string,
   ) {
     // Check if exists for this specific application
     const existing = await this.conversationRepo.findOne({
@@ -201,7 +203,27 @@ export class ConversationsService {
       tripApplication: { id: application.id },
       associatedUsers: [applicant, driver],
     });
-    return this.conversationRepo.save(conversation);
+    const savedConv = await this.conversationRepo.save(conversation);
+
+    const intro = this.messageRepo.create({
+      conversation: savedConv,
+      sender: applicant,
+      content: initialMessageText,
+      attachments: [],
+      timestamp: new Date(),
+      readByUserIds: [applicant.id],
+    });
+    const savedMsg = await this.messageRepo.save(intro);
+    await this.conversationRepo.update(savedConv.id, {
+      updatedAt: new Date(),
+    });
+
+    const messageResponse = this.mapMessageToDto(savedMsg);
+    this.tripMessageGateway.server
+      .to(savedConv.id)
+      .emit('newMessage', messageResponse);
+
+    return savedConv;
   }
 
   async addUserToGroup(tripId: string, user: User) {

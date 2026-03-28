@@ -11,6 +11,7 @@ import { User } from '../users/entities/user.entity';
 import { Like } from '../likes/like.entity';
 import { Place } from '../places/place.entity';
 import { Trip } from '../trips/trip.entity';
+import { Comment } from '../comments/comment.entity';
 import { CreateExperienceDto } from './dto/create-experience.dto';
 import { UpdateExperienceDto } from './dto/update-experience.dto';
 import { GetExperiencesQueryDto } from './dto/get-experiences-query.dto';
@@ -33,6 +34,8 @@ export class ExperiencesService {
     private readonly placeRepo: Repository<Place>,
     @InjectRepository(Trip)
     private readonly tripRepo: Repository<Trip>,
+    @InjectRepository(Comment)
+    private readonly commentRepo: Repository<Comment>,
     private readonly tripsService: TripsService,
   ) {}
 
@@ -131,6 +134,7 @@ export class ExperiencesService {
     const [activities, total] = await queryBuilder.getManyAndCount();
 
     await this.attachTripsCounts(activities);
+    await this.attachCommentsCounts(activities);
 
     const data = activities.map((activity) =>
       this.mapToResponseDto(activity, userId),
@@ -161,6 +165,7 @@ export class ExperiencesService {
         where: { experience: { id } },
       });
       (activity as any).tripsCount = tripsCount;
+      await this.attachCommentsCounts([activity]);
     }
 
     if (!activity) {
@@ -223,6 +228,7 @@ export class ExperiencesService {
       ],
     });
 
+    await this.attachCommentsCounts([result!]);
     return this.mapToResponseDto(result!, userId);
   }
 
@@ -282,6 +288,7 @@ export class ExperiencesService {
         'likes.user',
       ],
     });
+    await this.attachCommentsCounts([result!]);
     return this.mapToResponseDto(result!, userId);
   }
 
@@ -387,10 +394,40 @@ export class ExperiencesService {
       .getMany();
 
     await this.attachTripsCounts(activities);
+    await this.attachCommentsCounts(activities);
 
     return activities.map((activity) =>
       this.mapToResponseDto(activity, userId),
     );
+  }
+
+  /**
+   * Nombre de commentaires (thread) par expérience — table `comments`, pas les messages de chat.
+   */
+  private async attachCommentsCounts(activities: Activity[]): Promise<void> {
+    if (activities.length === 0) return;
+    const ids = activities.map((a) => a.id);
+    const rows = await this.commentRepo
+      .createQueryBuilder('comment')
+      .select('comment.activityId', 'eid')
+      .addSelect('COUNT(comment.id)', 'cnt')
+      .where('comment.activityId IN (:...ids)', { ids })
+      .groupBy('comment.activityId')
+      .getRawMany();
+
+    const countByExperience = new Map<string, number>();
+    for (const row of rows) {
+      const r = row as Record<string, string>;
+      const eid = r.eid ?? r.activityId;
+      const cnt = r.cnt ?? r.count;
+      if (eid != null && cnt != null) {
+        countByExperience.set(String(eid), Number(cnt));
+      }
+    }
+    for (const activity of activities) {
+      (activity as Activity & { commentsCount?: number }).commentsCount =
+        countByExperience.get(activity.id) ?? 0;
+    }
   }
 
   /**
@@ -448,10 +485,7 @@ export class ExperiencesService {
     const interests = activity.requests?.length || 0;
     const likes = activity.likes?.length ?? activity.likesCount ?? 0;
     const comments =
-      activity.conversations?.reduce(
-        (sum, conv) => sum + (conv.messages?.length || 0),
-        0,
-      ) || 0;
+      (activity as Activity & { commentsCount?: number }).commentsCount ?? 0;
     // Check if current user has liked
     const hasLiked = userId
       ? activity.likes?.some((like) => like.user?.id === userId) || false
